@@ -8,7 +8,7 @@ using namespace std;
 int* translate(string str)
 {
 	int* result = new int[str.length()];
-	for (int i = 0; i < str.length(); i++)
+	for (unsigned int i = 0; i < str.length(); i++)
 	{
 		switch (str[i])
 		{
@@ -45,6 +45,7 @@ int* translate(string str)
 			throw out_of_range("wrong input symbol");
 		}
 	}
+	return result;
 }
 string translate(int* arr, int length)
 {
@@ -101,7 +102,7 @@ public:
 	~Err(){};
 };
 
-class Block //размер блока по умолчанию 8 байт
+class Block 
 {
 	string plainTxt;//содержание данного блока
 	int* trPlainTxt;//translated - переведенный в числовой вид блок
@@ -114,12 +115,9 @@ public:
 	{
 		cout << plainTxt << endl;
 	}
-	char operator[](int i)
-	{
-		return plainTxt[i];
-	}
 
 	friend class PlainText;
+	friend class Skitala;
 	~Block(){};
 };
 
@@ -133,11 +131,19 @@ class PlainText
 	bool pkcs7_;
 	bool iso10126_;
 public:
-	PlainText() : originalTxt(""), blocks(), blocksNum(0), wasDivided(false),
-		ansiX923_(false), pkcs7_(false), iso10126_(false){};
+	PlainText() : originalTxt(""), blocksNum(0), wasDivided(false),
+		ansiX923_(false), pkcs7_(false), iso10126_(false)
+	{
+		for (int i = 0; i < 255; i++)
+			blocks[i] = nullptr;
+	}
 
-	PlainText(string text) : originalTxt(text), blocks(), blocksNum((text.length() - 1) / 8 + 1), 
-		wasDivided(false), ansiX923_(false), pkcs7_(false), iso10126_(false){};
+	PlainText(string text) : originalTxt(text), blocksNum((text.length() - 1) / 8 + 1), 
+		wasDivided(false), ansiX923_(false), pkcs7_(false), iso10126_(false)
+	{
+		for (int i = 0; i < 255; i++)
+			blocks[i] = nullptr;
+	}
 
 	void print()
 	{
@@ -152,7 +158,7 @@ public:
 
 															/*TYPES OF PADDING*/
 	// DD DD DD DD 00 00 00 04 (block = 8 bytes)
-	void ansiX923() 
+	void ansiX923(int blockSize) 
 	{
 		if (wasDivided == true)
 			throw Err(0);
@@ -163,7 +169,7 @@ public:
 			string str;
 			for (int i = 0; i < blocksNum - 1; i++)
 			{
-				for (j; j < k + 8; j++)
+				for (j; j < k + blockSize; j++)
 				{
 					str += originalTxt[j];
 				}
@@ -171,17 +177,17 @@ public:
 				blocks[i] = new Block(str);
 				str = "";
 			}
-			for (unsigned int i = 0; i < originalTxt.length() % 8; i++, j++)
+			for (unsigned int i = 0; i < originalTxt.length() % blockSize; i++, j++)
 			{
 				str += originalTxt[j];
 			}
-			int* arr = new int[8 - originalTxt.length() % 8];
-			for (int i = 0; i < 8 - 1 - originalTxt.length() % 8; i++)
+			int* arr = new int[blockSize - originalTxt.length() % blockSize];
+			for (unsigned int i = 0; i < blockSize - 1 - originalTxt.length() % blockSize; i++)
 			{
 				arr[i] = 0;
 			}
-			arr[8 - 1 - originalTxt.length() % 8] = 8 - 1 - originalTxt.length() % 8;
-			str += translate(arr, 8 - originalTxt.length() % 8);
+			arr[blockSize - 1 - originalTxt.length()%blockSize] = blockSize - 1 - originalTxt.length()%blockSize;
+			str += translate(arr, blockSize - originalTxt.length() % blockSize);
 			blocks[blocksNum - 1] = new Block(str);
 			delete[]arr;
 			wasDivided = true;
@@ -190,7 +196,7 @@ public:
 		return;
 	}
 	// DD DD DD DD 04 04 04 04 (block = 8 bytes)
-	void pkcs7() 
+	void pkcs7(int blockSize)
 	{
 		if (wasDivided == true)
 			throw Err(0);
@@ -201,7 +207,7 @@ public:
 			string str;
 			for (int i = 0; i < blocksNum - 1; i++)
 			{
-				for (j; j < k + 8; j++)
+				for (j; j < k + blockSize; j++)
 				{
 					str += originalTxt[j];
 				}
@@ -209,16 +215,16 @@ public:
 				blocks[i] = new Block(str);
 				str = "";
 			}
-			for (unsigned int i = 0; i < originalTxt.length() % 8; i++, j++)
+			for (unsigned int i = 0; i < originalTxt.length() % blockSize; i++, j++)
 			{
 				str += originalTxt[j];
 			}
-			int* arr = new int[8 - originalTxt.length() % 8];
-			for (int i = 0; i < 8 - originalTxt.length() % 8; i++)
+			int* arr = new int[blockSize - originalTxt.length() % blockSize];
+			for (unsigned int i = 0; i < blockSize - originalTxt.length() % blockSize; i++)
 			{
-				arr[i] = 8 - 1 - originalTxt.length() % 8;
+				arr[i] = blockSize - 1 - originalTxt.length() % blockSize;
 			}
-			str += translate(arr, 8 - originalTxt.length() % 8);
+			str += translate(arr, blockSize - originalTxt.length() % blockSize);
 			blocks[blocksNum - 1] = new Block(str);
 			delete[]arr;
 			wasDivided = true;
@@ -227,7 +233,7 @@ public:
 		return;
 	}
 	// DD DD DD DD 81 A6 23 04 ((empty-1) - random, last - number of empty) (block = 8 bytes)
-	void iso10126() 
+	void iso10126(int blockSize)
 	{
 		if (wasDivided == true)
 			throw Err(0);
@@ -238,7 +244,7 @@ public:
 			string str;
 			for (int i = 0; i < blocksNum - 1; i++)
 			{
-				for (j; j < k + 8; j++)
+				for (j; j < k + blockSize; j++)
 				{
 					str += originalTxt[j];
 				}
@@ -246,20 +252,18 @@ public:
 				blocks[i] = new Block(str);
 				str = "";
 			}
-			for (unsigned int i = 0; i < originalTxt.length() % 8; i++, j++)
+			for (unsigned int i = 0; i < originalTxt.length() % blockSize; i++, j++)
 			{
 				str += originalTxt[j];
 			}
-			int* arr = new int[8 - originalTxt.length() % 8];
-			srand(time(0));
-			for (int i = 0; i < 8 - 1 - originalTxt.length() % 8; i++)
+			int* arr = new int[blockSize - originalTxt.length() % blockSize];
+			srand((unsigned int)time(0));
+			for (unsigned int i = 0; i < blockSize - 1 - originalTxt.length() % blockSize; i++)
 			{
 				arr[i] = (rand()%255)%29; //случайные числа от 0 до 255 (mod 29)
-				cout << arr[i] << ",";
 			}
-			arr[8 - 1 - originalTxt.length() % 8] = 8 - originalTxt.length() % 8;
-			cout << arr[8 - 1 - originalTxt.length() % 8];
-			str += translate(arr, 8 - originalTxt.length() % 8);
+			arr[blockSize - 1 - originalTxt.length() % blockSize] = blockSize - originalTxt.length() % blockSize;
+			str += translate(arr, blockSize - originalTxt.length() % blockSize);
 			blocks[blocksNum - 1] = new Block(str);
 			delete[]arr;
 			wasDivided = true;
@@ -270,6 +274,7 @@ public:
 	}
 
 	friend class Block;
+	friend class Skitala;
 	~PlainText()
 	{
 		for (int i = 0; i < sizeof(blocks) / sizeof(blocks[0]); i++)
@@ -277,6 +282,80 @@ public:
 			delete blocks[i];
 		}
 	}
+};
+
+class Skitala //минус - первый и последний символ совпадают
+{
+	int n; // количество строк
+	int m; // количество столбцов
+	char parchmentTable[2][4]; // пергаментная табличка :)
+	string cipherText;
+	Block* block; // указатель на шифруемый блок
+public:
+	Skitala(){};
+	Skitala(Block* plain_bl) : cipherText(""), 
+		block(plain_bl), n(2), m(4)
+	{
+		for (int i = 0; i < 2; i++)
+			for (int j = 0; j < 4; j++)
+				parchmentTable[i][j] = '\0';
+	}
+
+	string cipher()
+	{
+		int k = 0;
+		for (int i = 0; i < 2; i++)
+		{
+			for (int j = 0; j < 4; j++, k++)
+			{
+				parchmentTable[i][j] = block->plainTxt[k];
+			}
+		}
+		for (int i = 0; i < 4; i++)
+		{
+			for (int j = 0; j < 2; j++)
+			{
+				cipherText += parchmentTable[j][i];
+			}
+		}
+		return cipherText;
+	}
+	string decipher()
+	{
+		int k = 0;
+		if (cipherText == "")
+			throw Err(1);
+		for (int i = 0; i < 4; i++)
+		{
+			for (int j = 0; j < 2; j++, k++)
+			{
+				parchmentTable[j][i] = cipherText[k];
+			}
+		}
+		string result;
+		for (int i = 0; i < 2; i++)
+		{
+			for (int j = 0; j < 4; j++)
+			{
+				result += parchmentTable[i][j];
+			}
+		}
+		return result;
+	}
+
+	void tryAlgorithm()
+	{
+		PlainText* pl = new PlainText("abcdefghabcdefghabc");
+		pl->iso10126(8);
+		Skitala sk(pl->blocks[2]);
+		cout << "ciphered:   " << sk.cipher() << endl;
+		cout << "deciphered: " << sk.decipher() << endl;
+		return;
+	}
+
+	friend class Block;
+	friend class PlainText;
+	~Skitala(){};
 };
 
 
@@ -288,11 +367,8 @@ int main()
 		translate("hello.");
 		translate(p, 4);
 
-		PlainText* pl = new PlainText("abcdefghabcdefghabc");
-		cout << "....." << endl;
-		//pl->ansiX923();
-		pl->iso10126();
-		pl->print();
+		Skitala s;
+		s.tryAlgorithm();
 	}
 	catch (exception& e)
 	{
@@ -303,7 +379,10 @@ int main()
 		switch (err.errType())
 		{
 		case 0:
-			cerr << "this plain text has already been divided into blocks";
+			cerr << "this plain text has already been divided into blocks" << endl;
+			break;
+		case 1:
+			cerr << "there's nothing to decipher" << endl;
 			break;
 		}
 	}
