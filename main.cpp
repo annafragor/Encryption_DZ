@@ -1,6 +1,8 @@
 #include <iostream>
 #include <string>
 #include <stdexcept>
+#include <cstdlib> //для srand
+#include <time.h>
 
 using namespace std;
 int* translate(string str)
@@ -87,6 +89,18 @@ string translate(int* arr, int length)
 	return result;
 }
 
+class Err
+{
+	int k;
+public:
+	Err(int k_v) : k(k_v){};
+	int errType() const
+	{
+		return k;
+	}
+	~Err(){};
+};
+
 class Block //размер блока по умолчанию 8 байт
 {
 	string plainTxt;//содержание данного блока
@@ -114,9 +128,16 @@ class PlainText
 	string originalTxt;
 	Block* blocks[255]; //массив указателей на блоки
 	int blocksNum;
+	bool wasDivided;
+	bool ansiX923_;
+	bool pkcs7_;
+	bool iso10126_;
 public:
-	PlainText() : originalTxt(""), blocks(), blocksNum(0){};
-	PlainText(string text) : originalTxt(text), blocks(), blocksNum((text.length()-1)/8 + 1){};
+	PlainText() : originalTxt(""), blocks(), blocksNum(0), wasDivided(false),
+		ansiX923_(false), pkcs7_(false), iso10126_(false){};
+
+	PlainText(string text) : originalTxt(text), blocks(), blocksNum((text.length() - 1) / 8 + 1), 
+		wasDivided(false), ansiX923_(false), pkcs7_(false), iso10126_(false){};
 
 	void print()
 	{
@@ -124,52 +145,129 @@ public:
 		cout << blocksNum << endl;
 		for(int i = 0; i < blocksNum; i++)
 		{
-			cout << blocks[i]->plainTxt;
+			cout << blocks[i]->plainTxt << endl;
 		}
 		return;
 	}
-	/*TYPES OF PADDING*/
-	void ansiX923() // DD DD DD DD 00 00 00 04 (block = 8 bytes)
+
+															/*TYPES OF PADDING*/
+	// DD DD DD DD 00 00 00 04 (block = 8 bytes)
+	void ansiX923() 
 	{
-		int j = 0;
-		int k = 0;
-		string str;
-		for (int i = 0; i < blocksNum - 1; i++)
+		if (wasDivided == true)
+			throw Err(0);
+		else
 		{
-			for (j; j < k + 8; j++)
+			int j = 0;
+			int k = 0;
+			string str;
+			for (int i = 0; i < blocksNum - 1; i++)
+			{
+				for (j; j < k + 8; j++)
+				{
+					str += originalTxt[j];
+				}
+				k = j;
+				blocks[i] = new Block(str);
+				str = "";
+			}
+			for (unsigned int i = 0; i < originalTxt.length() % 8; i++, j++)
 			{
 				str += originalTxt[j];
 			}
-			k = j;
-			blocks[i] = new Block(str);
-			str = "";
-		//	blocks[i]->print();
+			int* arr = new int[8 - originalTxt.length() % 8];
+			for (int i = 0; i < 8 - 1 - originalTxt.length() % 8; i++)
+			{
+				arr[i] = 0;
+			}
+			arr[8 - 1 - originalTxt.length() % 8] = 8 - 1 - originalTxt.length() % 8;
+			str += translate(arr, 8 - originalTxt.length() % 8);
+			blocks[blocksNum - 1] = new Block(str);
+			delete[]arr;
+			wasDivided = true;
+			ansiX923_ = true;
 		}
-		for (unsigned int i = 0; i < originalTxt.length() % 8; i++, j++)
-		{
-			str += originalTxt[j];
-		}
-		int* arr = new int[8 - originalTxt.length() % 8];
-		for (int i = 0; i < 8 - 1 - originalTxt.length() % 8; i++)
-		{
-			arr[i] = 0;
-		}
-		arr[8 - 1 - originalTxt.length() % 8] = 10;
-		str += translate(arr, 8 - originalTxt.length() % 8);
-		blocks[blocksNum-1] = new Block(str);
-	//	blocks[blocksNum - 1]->print();
-		delete[]arr;
+		return;
 	}
-	void pkcs7() // DD DD DD DD 04 04 04 04 (block = 8 bytes)
+	// DD DD DD DD 04 04 04 04 (block = 8 bytes)
+	void pkcs7() 
 	{
-
+		if (wasDivided == true)
+			throw Err(0);
+		else
+		{
+			int j = 0;
+			int k = 0;
+			string str;
+			for (int i = 0; i < blocksNum - 1; i++)
+			{
+				for (j; j < k + 8; j++)
+				{
+					str += originalTxt[j];
+				}
+				k = j;
+				blocks[i] = new Block(str);
+				str = "";
+			}
+			for (unsigned int i = 0; i < originalTxt.length() % 8; i++, j++)
+			{
+				str += originalTxt[j];
+			}
+			int* arr = new int[8 - originalTxt.length() % 8];
+			for (int i = 0; i < 8 - originalTxt.length() % 8; i++)
+			{
+				arr[i] = 8 - 1 - originalTxt.length() % 8;
+			}
+			str += translate(arr, 8 - originalTxt.length() % 8);
+			blocks[blocksNum - 1] = new Block(str);
+			delete[]arr;
+			wasDivided = true;
+			pkcs7_ = true;
+		}
+		return;
 	}
-	void iso10126() // DD DD DD DD 81 A6 23 04 ((empty-1) - random, last - number of empty) (block = 8 bytes)
+	// DD DD DD DD 81 A6 23 04 ((empty-1) - random, last - number of empty) (block = 8 bytes)
+	void iso10126() 
 	{
+		if (wasDivided == true)
+			throw Err(0);
+		else
+		{
+			int j = 0;
+			int k = 0;
+			string str;
+			for (int i = 0; i < blocksNum - 1; i++)
+			{
+				for (j; j < k + 8; j++)
+				{
+					str += originalTxt[j];
+				}
+				k = j;
+				blocks[i] = new Block(str);
+				str = "";
+			}
+			for (unsigned int i = 0; i < originalTxt.length() % 8; i++, j++)
+			{
+				str += originalTxt[j];
+			}
+			int* arr = new int[8 - originalTxt.length() % 8];
+			srand(time(0));
+			for (int i = 0; i < 8 - 1 - originalTxt.length() % 8; i++)
+			{
+				arr[i] = (rand()%255)%29; //случайные числа от 0 до 255 (mod 29)
+				cout << arr[i] << ",";
+			}
+			arr[8 - 1 - originalTxt.length() % 8] = 8 - originalTxt.length() % 8;
+			cout << arr[8 - 1 - originalTxt.length() % 8];
+			str += translate(arr, 8 - originalTxt.length() % 8);
+			blocks[blocksNum - 1] = new Block(str);
+			delete[]arr;
+			wasDivided = true;
+			iso10126_ = true;
+		}
+		return;
 
 	}
-
-
 
 	friend class Block;
 	~PlainText()
@@ -181,6 +279,7 @@ public:
 	}
 };
 
+
 int main()
 {
 	try
@@ -191,12 +290,22 @@ int main()
 
 		PlainText* pl = new PlainText("abcdefghabcdefghabc");
 		cout << "....." << endl;
-		pl->ansiX923();
+		//pl->ansiX923();
+		pl->iso10126();
 		pl->print();
 	}
 	catch (exception& e)
 	{
 		cerr << e.what() << endl;
+	}
+	catch (Err& err)
+	{
+		switch (err.errType())
+		{
+		case 0:
+			cerr << "this plain text has already been divided into blocks";
+			break;
+		}
 	}
 	system("pause");
 	return 0;
