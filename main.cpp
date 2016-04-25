@@ -5,45 +5,93 @@
 #include <time.h>
 
 using namespace std;
+int fromChar(char c)
+{
+	int result;
+	switch (c)
+	{
+	case 'a': result = 0; break;
+	case 'b': result = 1; break;
+	case 'c': result = 2; break;
+	case 'd': result = 3; break;
+	case 'e': result = 4; break;
+	case 'f': result = 5; break;
+	case 'g': result = 6; break;
+	case 'h': result = 7; break;
+	case 'i': result = 8; break;
+	case 'j': result = 9; break;
+	case 'k': result = 10; break;
+	case 'l': result = 11; break;
+	case 'm': result = 12; break;
+	case 'n': result = 13; break;
+	case 'o': result = 14; break;
+	case 'p': result = 15; break;
+	case 'q': result = 16; break;
+	case 'r': result = 17; break;
+	case 's': result = 18; break;
+	case 't': result = 19; break;
+	case 'u': result = 20; break;
+	case 'v': result = 21; break;
+	case 'w': result = 22; break;
+	case 'x': result = 23; break;
+	case 'y': result = 24; break;
+	case 'z': result = 25; break;
+	case ' ': result = 26; break;
+	case '.': result = 27; break;
+	case '?': result = 28; break;
+	default:
+		throw out_of_range("wrong input symbol");
+	}
+	return result;
+}
 int* translate(string str)
 {
 	int* result = new int[str.length()];
 	for (unsigned int i = 0; i < str.length(); i++)
 	{
-		switch (str[i])
-		{
-		case 'a': result[i] = 0; break;
-		case 'b': result[i] = 1; break;
-		case 'c': result[i] = 2; break;
-		case 'd': result[i] = 3; break;
-		case 'e': result[i] = 4; break;
-		case 'f': result[i] = 5; break;
-		case 'g': result[i] = 6; break;
-		case 'h': result[i] = 7; break;
-		case 'i': result[i] = 8; break;
-		case 'j': result[i] = 9; break;
-		case 'k': result[i] = 10; break;
-		case 'l': result[i] = 11; break;
-		case 'm': result[i] = 12; break;
-		case 'n': result[i] = 13; break;
-		case 'o': result[i] = 14; break;
-		case 'p': result[i] = 15; break;
-		case 'q': result[i] = 16; break; 
-		case 'r': result[i] = 17; break;
-		case 's': result[i] = 18; break;
-		case 't': result[i] = 19; break;
-		case 'u': result[i] = 20; break;
-		case 'v': result[i] = 21; break;
-		case 'w': result[i] = 22; break;
-		case 'x': result[i] = 23; break;
-		case 'y': result[i] = 24; break;
-		case 'z': result[i] = 25; break;
-		case ' ': result[i] = 26; break;
-		case '.': result[i] = 27; break;
-		case '?': result[i] = 28; break;
-		default:
-			throw out_of_range("wrong input symbol");
-		}
+		result[i] = fromChar(str[i]);
+	}
+	return result;
+}
+
+
+
+char fromInt(int i)
+{
+	char result;
+	switch (i)
+	{
+	case 0: result = 'a'; break;
+	case 1: result = 'b'; break;
+	case 2: result = 'c'; break;
+	case 3: result = 'd'; break;
+	case 4: result = 'e'; break;
+	case 5: result = 'f'; break;
+	case 6: result = 'g'; break;
+	case 7: result = 'h'; break;
+	case 8: result = 'i'; break;
+	case 9: result = 'j'; break;
+	case 10: result = 'k'; break;
+	case 11: result = 'l'; break;
+	case 12: result = 'm'; break;
+	case 13: result = 'n'; break;
+	case 14: result = 'o'; break;
+	case 15: result = 'p'; break;
+	case 16: result = 'q'; break;
+	case 17: result = 'r'; break;
+	case 18: result = 's'; break;
+	case 19: result = 't'; break;
+	case 20: result = 'u'; break;
+	case 21: result = 'v'; break;
+	case 22: result = 'w'; break;
+	case 23: result = 'x'; break;
+	case 24: result = 'y'; break;
+	case 25: result = 'z'; break;
+	case 26: result = ' '; break;
+	case 27: result = '.'; break;
+	case 28: result = '?'; break;
+	default:
+		throw out_of_range("wrong input symbol");
 	}
 	return result;
 }
@@ -52,40 +100,7 @@ string translate(int* arr, int length)
 	string result;
 	for (int i = 0; i < length; i++)
 	{
-		switch (arr[i])
-		{
-		case 0: result += 'a'; break;
-		case 1: result += 'b'; break;
-		case 2: result += 'c'; break;
-		case 3: result += 'd'; break;
-		case 4: result += 'e'; break;
-		case 5: result += 'f'; break;
-		case 6: result += 'g'; break;
-		case 7: result += 'h'; break;
-		case 8: result += 'i'; break;
-		case 9: result += 'j'; break;
-		case 10: result += 'k'; break;
-		case 11: result += 'l'; break;
-		case 12: result += 'm'; break;
-		case 13: result += 'n'; break;
-		case 14: result += 'o'; break;
-		case 15: result += 'p'; break;
-		case 16: result += 'q'; break;
-		case 17: result += 'r'; break;
-		case 18: result += 's'; break;
-		case 19: result += 't'; break;
-		case 20: result += 'u'; break;
-		case 21: result += 'v'; break;
-		case 22: result += 'w'; break;
-		case 23: result += 'x'; break;
-		case 24: result += 'y'; break;
-		case 25: result += 'z'; break;
-		case 26: result += ' '; break;
-		case 27: result += '.'; break;
-		case 28: result += '?'; break;
-		default:
-			throw out_of_range("wrong input symbol");
-		}
+		result += fromInt(arr[i]);
 	}
 	return result;
 }
@@ -118,6 +133,8 @@ public:
 
 	friend class PlainText;
 	friend class Skitala;
+	friend class Hill;
+	friend class Vigenere;
 	~Block(){};
 };
 
@@ -137,14 +154,12 @@ public:
 		for (int i = 0; i < 255; i++)
 			blocks[i] = nullptr;
 	}
-
 	PlainText(string text) : originalTxt(text), blocksNum((text.length() - 1) / 8 + 1), 
 		wasDivided(false), ansiX923_(false), pkcs7_(false), iso10126_(false)
 	{
 		for (int i = 0; i < 255; i++)
 			blocks[i] = nullptr;
 	}
-
 	void print()
 	{
 		cout << originalTxt.length() << endl;
@@ -155,8 +170,8 @@ public:
 		}
 		return;
 	}
-
-															/*TYPES OF PADDING*/
+			
+					/*TYPES OF PADDING*/
 	// DD DD DD DD 00 00 00 04 (block = 8 bytes)
 	void ansiX923(int blockSize) 
 	{
@@ -274,7 +289,8 @@ public:
 	}
 
 	friend class Block;
-	friend class Skitala;
+//	friend class Skitala;
+	friend class Vigenere;
 	~PlainText()
 	{
 		for (int i = 0; i < sizeof(blocks) / sizeof(blocks[0]); i++)
@@ -288,7 +304,7 @@ class Skitala //минус - первый и последний символ с�
 {
 	int n; // количество строк
 	int m; // количество столбцов
-	char parchmentTable[2][4]; // пергаментная табличка :)
+	char parchmentTable[2][4]; 
 	string cipherText;
 	Block* block; // указатель на шифруемый блок
 public:
@@ -347,17 +363,98 @@ public:
 	{
 		PlainText* pl = new PlainText("abcdefghabcdefghabc");
 		pl->iso10126(8);
-		Skitala sk(pl->blocks[2]);
+		Skitala sk(pl->blocks[0]);
 		cout << "ciphered:   " << sk.cipher() << endl;
 		cout << "deciphered: " << sk.decipher() << endl;
+		delete pl;
 		return;
 	}
 
-	friend class Block;
+//	friend class Block;
 	friend class PlainText;
 	~Skitala(){};
 };
 
+class Vigenere
+{
+	Block* block;
+	char** tabulaRecta;
+	string key;
+	string cTxt; //ciphered text
+public:
+	Vigenere(){};
+	Vigenere(Block* obj, string keyword) : cTxt(""), block(obj)
+	{
+		tabulaRecta = new char*[29];
+		for (int i = 0; i < 29; i++)
+			tabulaRecta[i] = new char[29];
+
+		tabulaRecta[0] = "abcdefghijklmnopqrstuvwxyz .?";
+		for (int i = 1; i < 29; i++)
+		{
+			for (int j = 0; j < 28; j++)
+				tabulaRecta[i][j] = tabulaRecta[i - 1][j + 1];
+			tabulaRecta[i][28] = tabulaRecta[i - 1][0];
+		}
+
+		if (keyword.length() == 8)
+			key = keyword;
+		else
+		{
+			for (unsigned int i = 0; i < 8 / keyword.length(); i++)
+				key += keyword;
+			for (unsigned int i = 0; i < 8 % keyword.length(); i++)
+			{
+				key += keyword[i];
+			}
+		}
+	}
+
+	string cipher()
+	{
+		string result;
+		for (int i = 0; i < 8; i++)
+		{
+			result += tabulaRecta[fromChar(key[i])][fromChar(block->plainTxt[i])];
+		}
+		cTxt = result;
+		return result;
+	}
+	string decipher()
+	{
+		string result;
+		int k = 0;
+		for (int i = 0; i < 8; i++)
+		{
+			while (tabulaRecta[fromChar(key[i])][k] != cTxt[i])
+			{
+				k++;
+			}
+			result += fromInt(k);
+		}
+		return result;
+	}
+
+	void tryA()
+	{
+		PlainText* pl = new PlainText("abcdefghabcdefghabc");
+		pl->iso10126(8);
+		Vigenere v(pl->blocks[0], "key");
+		cout << "wanna to shifr " << pl->blocks[0]->plainTxt << endl;
+		cout << "ciphered:      " << v.cipher() << endl;
+		cout << "deciphered:    " << v.decipher() << endl;
+		delete pl;
+		return;
+	}
+
+	friend class PlainText;
+	~Vigenere() //????? don't work ????
+	{
+		//for (unsigned int i = 0; i < 29; i++)
+		//	delete[] tabulaRecta[i];
+		//delete[] tabulaRecta;
+	}
+};
 
 int main()
 {
@@ -367,8 +464,12 @@ int main()
 		translate("hello.");
 		translate(p, 4);
 
-		Skitala s;
-		s.tryAlgorithm();
+		cout << "....." << endl;
+
+		Vigenere s;
+		s.tryA();
+		cout << endl << "....." << endl;
+
 	}
 	catch (exception& e)
 	{
