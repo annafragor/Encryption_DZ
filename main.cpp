@@ -504,8 +504,8 @@ class Cipher
 //	T alg;
 
 public:
-	Cipher<>(){};
-	Cipher<>(PlainText* obj) : p(obj);
+	Cipher(){};
+	Cipher(PlainText* obj) : p(obj);
 
 	//template <class T>
 	void ecbCipher(char ch)
@@ -537,7 +537,7 @@ public:
 	friend class Skitala;
 	friend class Vigenere;
 	friend class Hill;
-	~Cipher<>(){};
+	~Cipher(){};
 };
 
 int main()
