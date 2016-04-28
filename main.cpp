@@ -288,7 +288,7 @@ public:
 	friend class Block;
 	friend class Skitala;
 	friend class Vigenere;
-	friend class Scrambler<Skitala>;
+	friend class Cipher<Skitala>;
 	~PlainText()
 	{
 		for (int i = 0; i < sizeof(blocks) / sizeof(blocks[0]); i++)
@@ -497,15 +497,15 @@ int** transp(int** matr, int n)
 
 
 template <class T>
-class Scrambler
+class Cipher
 {
 	PlainText* p;
 	Block* c[255]; //ciphered blocks
 //	T alg;
 
 public:
-	Scrambler<>(){};
-	Scrambler<>(PlainText* obj) : p(obj);
+	Cipher<>(){};
+	Cipher<>(PlainText* obj) : p(obj);
 
 	//template <class T>
 	void ecbCipher(char ch)
@@ -537,7 +537,7 @@ public:
 	friend class Skitala;
 	friend class Vigenere;
 	friend class Hill;
-	~Scrambler<>(){};
+	~Cipher<>(){};
 };
 
 int main()
@@ -567,8 +567,8 @@ int main()
 		cout << "....." << endl;
 
 		PlainText* pl = new PlainText("abcdefghabcdefghabc");
-		Scrambler<Skitala>;
-		Scrambler<Skitala> obj(pl);
+		Cipher<Skitala>;
+		Cipher<Skitala> obj(pl);
 		obj.ecbCipher('a');
 
 	//	cout << endl << "det = " << det(pp, 3);
