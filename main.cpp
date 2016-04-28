@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <stdexcept>
-#include <cstdlib> //для srand
+#include <cstdlib> // srand
 #include <time.h>
 
 using namespace std;
@@ -53,7 +53,6 @@ int* translate(string str)
 	}
 	return result;
 }
-
 
 
 char fromInt(int i)
@@ -119,12 +118,10 @@ public:
 
 class Block 
 {
-	string plainTxt;//содержание данного блока
-	int* trPlainTxt;//translated - переведенный в числовой вид блок
-	
+	string plainTxt;//content of this block	
 public:
-	Block() : trPlainTxt(nullptr), plainTxt(""){};
-	Block(string str) : plainTxt(str), trPlainTxt(translate(str)){};
+	Block() : plainTxt(""){};
+	Block(string str) : plainTxt(str){};
 
 	void print()
 	{
@@ -141,7 +138,7 @@ public:
 class PlainText
 {
 	string originalTxt;
-	Block* blocks[255]; //массив указателей на блоки
+	Block* blocks[255];
 	int blocksNum;
 	bool wasDivided;
 	bool ansiX923_;
@@ -289,8 +286,9 @@ public:
 	}
 
 	friend class Block;
-//	friend class Skitala;
+	friend class Skitala;
 	friend class Vigenere;
+	friend class Scrambler<Skitala>;
 	~PlainText()
 	{
 		for (int i = 0; i < sizeof(blocks) / sizeof(blocks[0]); i++)
@@ -302,11 +300,11 @@ public:
 
 class Skitala //минус - первый и последний символ совпадают
 {
-	int n; // количество строк
-	int m; // количество столбцов
+	int n; // num of rows
+	int m; // num of columns
 	char parchmentTable[2][4]; 
 	string cipherText;
-	Block* block; // указатель на шифруемый блок
+	Block* block;
 public:
 	Skitala(){};
 	Skitala(Block* plain_bl) : cipherText(""), 
@@ -370,7 +368,6 @@ public:
 		return;
 	}
 
-//	friend class Block;
 	friend class PlainText;
 	~Skitala(){};
 };
@@ -456,6 +453,214 @@ public:
 	}
 };
 
+class Hill //C = P*K; P = C*K^(-1)
+{
+	int** k; //матрица ключ
+	Block block; //шифруемый блок
+	int* c; //столбец зашифрованный
+	string cipheredTxt; //translated c
+public:
+	Hill(){};
+
+
+	friend class Block;
+	~Hill(){};
+};
+
+
+bool ifZeroStr(int* str, int n)
+{
+	int k = 0;
+	for (int i = 0; i < n; i++)
+	{
+		if (str[i] != 0)
+			k++;
+	}
+	if (k == 0)
+		return true;
+	else
+		return false;
+}
+int** transp(int** matr, int n)
+{
+	for (int i = 0; i < n; i++)
+	{
+		for (int j = 0; j < n; j++)
+		{
+			int k = matr[i][j];
+			matr[i][j] = matr[j][i];
+			matr[j][i] = k;			
+		}
+	}
+	return matr;
+}
+//int** gauss(int** matr, int n, bool tr)
+//{
+//	if (tr == false)
+//		matr = transp(matr, n);
+//	int k = 0;
+//	int m = 0;
+//	if (n == 1)
+//		return matr;
+//	while (ifZeroStr(matr[k], n) == true)
+//	{
+//		k++;
+//	}
+//	//k-я строка - ненулевая
+//	while (matr[k][m] != 0)
+//	{
+//		m++;
+//	}
+//
+//	////меняем 1 столбец и m
+//	//for (int i = 0; i < n; i++)
+//	//{
+//	//	int h = matr[i][m];
+//	//	matr[i][m] = matr[i][0];
+//	//	matr[i][0] = h;
+//	//}
+//
+//	for (int i = 1; i < n; i++)
+//	{
+//		for (int j = 0; j < n; j++)
+//		{
+//			matr[j][i] = matr[j][i] - matr[i][0] * (matr[k][i] / matr[k][0]);
+//			cout << "ok";
+//		}
+//	}
+//	int** matrM = new int*[n - k]; //как удалять!!?!?!?
+//	for (int i = 0; i < n - k; i++)
+//	{
+//		matrM[i] = new int[n - m + 1];
+//	}
+//	for (int i = 0; i < n - k; i++)
+//	{
+//		for (int j = 0; j < n - m + 1; j++)
+//		{
+//			matrM[i][j] = matr[k + i][m - 1 + i];
+//		}
+//	}
+//	cout << endl;
+//	for (int i = 0; i < n - k; i++)
+//	{
+//		for (int j = 0; j < n - m + 1; j++)
+//		{
+//			cout << matrM[i][j] << " ";
+//		}
+//		cout << endl;
+//	}
+//	gauss(matrM, n - k, false);
+//}
+//int det(int **matr, int n)
+//{
+//	int d = 0;
+//	int k = 1;
+//	if (n == 1)
+//		return matr[0][0];
+//	else
+//	{
+//		int** A = new int*[n - 1];
+//		for (int i = 0; i < n - 1; i++)
+//		{
+//			A[i] = new int[n - 1];
+//		}
+//		for (int i = 0; i < n - 1; i++)
+//		{
+//			for (int j = 0; j < n - 1; j++)
+//				A[i][j] = 0;
+//		}
+//
+//		for (int i = 0; i < n; i++)
+//		{
+//			//for (int j = 0; j < n; j++)
+//			//{
+//			//	if (j == i) continue;
+//			//	if (j<i)
+//			//		A[j][i - 1] = matr[j][i];
+//			//	else
+//			//		A[j - 1][i - 1] = matr[j][i];
+//			//}
+//			for (int x = 1; x < n; x++)
+//			{
+//				for (int y = 0; y < n; y++)
+//				{
+//					if (y == i)
+//						continue;
+//					else if (y < i){
+//						A[x - 1][y] = matr[x][y];
+//						cout << A[x-1][y] << " ";
+//					}
+//					else{
+//						A[x - 1][y + 1] = matr[x][y];
+//						cout << A[x - 1][y + 1] << " ";
+//					}
+//				}
+//			}
+//			cout << endl << "det A = " << det(A, n-1);
+//			d = d + k*matr[0][i] * det(A, n - 1);
+//			cout << "d = " << d << endl;
+//			k = (-1)*k;
+//			cout << "ok";
+//		}
+//
+//		//for (int i = 0; i < n - 1; i++)
+//		//	delete A[i];
+//		//delete[] A;
+//	}
+//
+//	return d;
+//}
+
+template <class T>
+class Scrambler
+{
+	PlainText* p;
+	//bool skitala_;
+	//bool vigenere_;
+	//bool hill_;
+	//bool ansiX923_;
+	//bool pkcs7_;
+	//bool iso10126_;
+	Block* c[255]; //ciphered blocks
+//	T alg;
+
+public:
+	Scrambler<>(){};
+	Scrambler<>(PlainText* obj) : p(obj);
+
+	//template <class T>
+	void ecbCipher(char ch)
+	{
+		switch (ch)
+		{
+		case 'i': //iso10126
+			p->iso10126(8);
+			break;
+		case 'a': //ansiX923
+			p->ansiX923(8);
+			break;
+		case 'p': //pkcs7
+			P->pkcs7(8);
+			break;
+		}
+		for (int i = 0; i < p->blocksNum; i++)
+		{
+			T alg(p->blocks[i]);
+			cout << "  ciphered[" << i << "]: " << alg.cipher() << endl;
+			cout << "deciphered[" << i << "]: " << alg.decipher() << endl;
+		}
+	}
+	void ecbDecipher()
+	{
+
+	}
+	friend class PlainText;
+	friend class Skitala;
+	friend class Vigenere;
+	friend class Hill;
+	~Scrambler<>(){};
+};
+
 int main()
 {
 	try
@@ -465,11 +670,29 @@ int main()
 		translate(p, 4);
 
 		cout << "....." << endl;
-
 		Vigenere s;
 		s.tryA();
 		cout << endl << "....." << endl;
+		int** pp = new int*[3];
+		for (int i = 0; i < 3; i++)
+			pp[i] = new int[3];
+		for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			pp[i][j] = rand() % 10;
+		for (int i = 0; i < 3; i++)
+		{
+			for (int j = 0; j < 3; j++)
+				cout << pp[i][j] << " ";
+			cout << endl;
+		}
+		cout << "....." << endl;
 
+		PlainText* pl = new PlainText("abcdefghabcdefghabc");
+		Scrambler<Skitala>;
+		Scrambler<Skitala> obj(pl);
+		obj.ecbCipher('a');
+
+	//	cout << endl << "det = " << det(pp, 3);
 	}
 	catch (exception& e)
 	{
