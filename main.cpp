@@ -3,8 +3,11 @@
 #include <stdexcept>
 #include <cstdlib> // srand
 #include <time.h>
-
+#include <cstring>
 using namespace std;
+class Skitala;
+template <class T>
+class Cipher;
 int fromChar(char c)
 {
 	int result;
@@ -386,7 +389,7 @@ public:
 		for (int i = 0; i < 29; i++)
 			tabulaRecta[i] = new char[29];
 
-		tabulaRecta[0] = "abcdefghijklmnopqrstuvwxyz .?";
+		std::strcpy(tabulaRecta[0], "abcdefghijklmnopqrstuvwxyz .?");
 		for (int i = 1; i < 29; i++)
 		{
 			for (int j = 0; j < 28; j++)
@@ -505,7 +508,7 @@ class Cipher
 
 public:
 	Cipher(){};
-	Cipher(PlainText* obj) : p(obj);
+	Cipher(PlainText* obj) : p(obj) {};
 
 	//template <class T>
 	void ecbCipher(char ch)
@@ -519,7 +522,7 @@ public:
 			p->ansiX923(8);
 			break;
 		case 'p': //pkcs7
-			P->pkcs7(8);
+			p->pkcs7(8);
 			break;
 		}
 		for (int i = 0; i < p->blocksNum; i++)
@@ -567,7 +570,7 @@ int main()
 		cout << "....." << endl;
 
 		PlainText* pl = new PlainText("abcdefghabcdefghabc");
-		Cipher<Skitala>;
+		Cipher<Skitala> a;
 		Cipher<Skitala> obj(pl);
 		obj.ecbCipher('a');
 
