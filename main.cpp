@@ -116,7 +116,7 @@ string translate(int* arr, int length)
 	}
 	return result;
 }
-double determ(int** Arr, int size)
+int determ(int** Arr, int size)
 {
 	int i, j;
 	int det = 0;
@@ -433,11 +433,11 @@ class Skitala //минус - первый и последний символ с�
 	int m; // num of columns
 	char parchmentTable[2][4]; 
 	string cipherText;
-	Block* block;
+	PlainText* plTxt;
 public:
 	Skitala(){};
-	Skitala(Block* plain_bl) : cipherText(""), 
-		block(plain_bl), n(2), m(4)
+	Skitala(PlainText* obj) : cipherText(""), 
+		plTxt(obj), n(2), m(4)
 	{
 		for (int i = 0; i < 2; i++)
 			for (int j = 0; j < 4; j++)
@@ -446,55 +446,66 @@ public:
 
 	string cipher()
 	{
-		int k = 0;
-		for (int i = 0; i < 2; i++)
+		for (int x = 0; x < plTxt->blocksNum; x++)
 		{
-			for (int j = 0; j < 4; j++, k++)
+			int k = 0;
+			for (int i = 0; i < 2; i++)
 			{
-				parchmentTable[i][j] = block->plainTxt[k];
+				for (int j = 0; j < 4; j++, k++)
+				{
+					parchmentTable[i][j] = plTxt->blocks[x]->plainTxt[k];
+				}
+			}
+			for (int i = 0; i < 4; i++)
+			{
+				for (int j = 0; j < 2; j++)
+				{
+					cipherText += parchmentTable[j][i];
+				}
 			}
 		}
-		for (int i = 0; i < 4; i++)
-		{
-			for (int j = 0; j < 2; j++)
-			{
-				cipherText += parchmentTable[j][i];
-			}
-		}
+		cout << endl << "want  to  cipher:   " << plTxt->originalTxt;
+		cout << endl << "ciphered skitala:   " << cipherText << endl;
 		return cipherText;
 	}
 	string decipher()
 	{
+		string result;
 		int k = 0;
 		if (cipherText == "")
 			throw Err(1);
-		for (int i = 0; i < 4; i++)
-		{
-			for (int j = 0; j < 2; j++, k++)
-			{
-				parchmentTable[j][i] = cipherText[k];
-			}
-		}
-		string result;
-		for (int i = 0; i < 2; i++)
-		{
-			for (int j = 0; j < 4; j++)
-			{
-				result += parchmentTable[i][j];
-			}
-		}
-		return result;
-	}
 
-	void tryAlgorithm()
-	{
-		PlainText* pl = new PlainText("abcdefghabcdefghabc");
-		pl->iso10126(8);
-		Skitala sk(pl->blocks[0]);
-		cout << "ciphered:   " << sk.cipher() << endl;
-		cout << "deciphered: " << sk.decipher() << endl;
-		delete pl;
-		return;
+		string pD = "";//deciphered plain text
+		PlainText* blocksC = new PlainText(cipherText);//делим строку зашифрованного текста на блоки по 8
+		blocksC->pkcs7(8);
+
+		for (int x = 0; x < blocksC->blocksNum; x++){
+			for (int i = 0; i < 4; i++)
+			{
+				for (int j = 0; j < 2; j++, k++)
+				{
+					parchmentTable[j][i] = cipherText[k];
+				}
+			}
+			for (int i = 0; i < 2; i++)
+			{
+				for (int j = 0; j < 4; j++)
+				{
+					result += parchmentTable[i][j];
+				}
+			}
+		}
+
+		int* o = translate(result);
+		if ((plTxt->ansiX923_ == true) || (plTxt->iso10126_ == true) || (plTxt->pkcs7_ == true)){
+			for (int i = 0; i < o[result.length() - 1] + 1; i++){
+				result.erase(result.begin() + (result.length() - 1));
+			}
+		}
+		delete o;
+
+		cout << "deciphered skitala: " << result << endl;
+		return result;
 	}
 
 	friend class PlainText;
@@ -549,6 +560,8 @@ public:
 			}
 		}
 		cTxt += result;
+		cout << "want to cipher:      " << plTxt->originalTxt << endl;
+		cout << "ciphered vigenere:   " << cTxt << endl;
 		return result;
 	}
 
@@ -557,10 +570,8 @@ public:
 	{
 		string result;
 		int k = 0;
-		cout << "cTxt = " << cTxt << endl;
 		PlainText* blocksC = new PlainText(cTxt);//делим строку зашифрованного текста на блоки по 8
 		blocksC->pkcs7(8);
-		blocksC->print();
 
 		for (int x = 0; x < plTxt->blocksNum; x++)
 		{
@@ -574,25 +585,26 @@ public:
 				result += fromInt(k);
 			}
 		}
+
+		int* o = translate(result);
+		if ((plTxt->ansiX923_ == true) || (plTxt->iso10126_ == true) || (plTxt->pkcs7_ == true)){
+			for (int i = 0; i < o[result.length() - 1] + 1; i++){
+				result.erase(result.begin() + (result.length() - 1));
+			}
+		}
+		delete o;
+
+		cout << "deciphered vigenere: " << result << endl;
+
 		return result;
 	}
-
-	//void tryA()
-	//{
-	//	Vigenere v(plTxt, "key");
-	//	cout << "wanna to shifr " << plTxt->originalTxt << endl;
-	//	cout << "ciphered:      " << v.cipher() << endl;
-	//	cout << "deciphered:    " << v.decipher() << endl;
-	//	cout << "okkk";
-	//	return;
-	//}
 
 	friend class PlainText;
 	~Vigenere() //????? don't work ????
 	{
-		for (unsigned int i = 0; i < 29; i++)
-			delete[] tabulaRecta[i];
-		delete[] tabulaRecta;
+		//for (unsigned int i = 0; i < 29; i++)
+		//	delete[] tabulaRecta[i];
+		//delete[] tabulaRecta;
 	}
 };
 
@@ -643,11 +655,8 @@ public:
 	{
 		k = invMatr(k);
 		string pD = "";//deciphered plain text
-		cout << "cTxt= " << cTxt << endl;
 		PlainText* blocksC = new PlainText(cTxt);//делим строку зашифрованного текста на блоки по 8
 		blocksC->pkcs7(8);
-//		blocksC->print();
-		cout << "----------------------" << endl;
 
 		for (int x = 0; x < blocksC->blocksNum; x++){
 
@@ -669,14 +678,13 @@ public:
 		delete blocksC;
 		delete[] c;
 	
-		//int* o = translate(ppp);
-		//cout << o[ppp.length()-1] << endl;
-		//if ((plTxt->ansiX923_==true) || (plTxt->iso10126_==true) || (plTxt->pkcs7_==true)){
-		//	for (int i = 0; i < o[ppp.length()-1]; i++){
-		//		ppp.erase(ppp.begin() + (ppp.length() - 1));
-		//	}
-		//}
-		//delete o;
+		int* o = translate(pD);
+		if ((plTxt->ansiX923_==true) || (plTxt->iso10126_==true) || (plTxt->pkcs7_==true)){
+			for (int i = 0; i < o[pD.length()-1]+1; i++){
+				pD.erase(pD.begin() + (pD.length() - 1));
+			}
+		}
+		delete o;
 		cout << "deciphered hill: " << pD << endl;
 		return pD;
 	}
@@ -748,6 +756,7 @@ int** invMatr(int** matr/*size = 8*/)
 	for (int i = 0; i < 8; i++)
 		delete[] invM[i];
 	delete[] invM;
+	//////////////////////////////////////////////////////////
 	//for (int i = 0; i < 8; i++)
 	//	delete[] add[i];
 	//delete[] add;
@@ -759,27 +768,7 @@ int main()
 {
 	try
 	{
-		int** pp = new int*[8];
-		for (int i = 0; i < 8; i++)
-			pp[i] = new int[8];
-		for (int i = 0; i < 8; i++)
-		for (int j = 0; j < 8; j++)
-			pp[i][j] = rand() % 29;		
-		for (int i = 0; i < 8; i++)
-		{
-			for (int j = 0; j < 8; j++)
-				cout << pp[i][j] << " ";
-			cout << endl;
-		}
-		cout << "--------------" << endl;
-		pp = invMatr(pp);
-		for (int i = 0; i < 8; i++)
-		{
-			for (int j = 0; j < 8; j++)
-				cout << pp[i][j] << " ";
-			cout << endl;
-		}
-
+		cout << "---------------HILL--------------" << endl;
 		PlainText* pl = new PlainText("abcdefghabcdefghabc");
 		pl->iso10126(8);
 		Hill h(pl, 0);
@@ -790,13 +779,20 @@ int main()
 		PlainText* plv = new PlainText("i am machine i never sleep");
 		plv->iso10126(8);
 		Vigenere v(plv, "key");
-	//	cout << "wanna to shifr " << plv->originalTxt << endl;
-		cout << "ciphered:      " << v.cipher() << endl;
-		cout << "deciphered:    " << v.decipher() << endl;
-		cout << "okkk";
-		cout << "here";
+		v.cipher();
+		v.decipher();
+
+		cout << "------------SKITALA--------------" << endl;
+		PlainText* pls = new PlainText("i shifr skitala very well");
+		pls->pkcs7(8);
+		Skitala s(pls);
+		s.cipher();
+		s.decipher();
+
 		delete plv;
-	}
+		delete pl;
+
+	}  
 	catch (exception& e)
 	{
 		cerr << e.what() << endl;
@@ -815,6 +811,8 @@ int main()
 			cerr << "number isn't in ring" << endl;
 		}
 	}
+	cout << endl << "now here" << endl; //сюда не доходит ~Vigenere() не работает
 	system("pause");
+
 	return 0;
 }
