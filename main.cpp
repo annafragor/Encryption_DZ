@@ -1,14 +1,11 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
-#include <cstring>
 #include <string>
 #include <stdexcept>
-#include <algorithm>
 #include <cstdlib> //srand
 #include <time.h>
 #include <vector>
 #include <fstream>
-#include <iomanip>
 
 using namespace std;
 
@@ -197,7 +194,6 @@ vector<vector<int>> transp(vector<vector<int>> matr, int n)
 	}
 	return matr;
 }
-
 
 class Skitala //минус - первый и последний символ совпадают
 {
@@ -405,7 +401,7 @@ public:
 	ECB() : key(""), finalText(""), wasDivided(false) {};
 	ECB(string key_v) : key(key_v), finalText(""), wasDivided(false) {}; //for Vigenere
 
-	string e(char algType)
+	string e(char algType, char paddingType)
 	{
 		string str;
 		char ch;
@@ -423,21 +419,46 @@ public:
 			}
 			if (str.length() != 8)
 			{
-				//ansiX923 a(str);
-				//str = a.add();
-				//pkcs7 p(str);
-				//str = p.add();
-				iso10126 i(str);
-				str = i.add();
+				str = string(str.begin(), str.end() - 1);
+				switch (paddingType)
+				{
+				case 'i':
+				{
+							iso10126 is(str);
+							str = is.add();
+							break;
+				}
+				case 'a':
+				{
+							ansiX923 ans(str);
+							str = ans.add();
+							break;
+				}
+				case 'p':
+				{
+							pkcs7 pk(str);
+							str = pk.add();
+							break;
+				}
+				}
 				wasDivided = true;
 			}
 			switch (algType)
 			{
 			case 'v':
-				Vigenere* v = new Vigenere(str, key);
-				finalText += v->e();
-				delete v;
-				break;
+			{
+						Vigenere* v = new Vigenere(str, key);
+						finalText += v->e();
+						delete v;
+						break;
+			}
+			case 's':
+			{
+						Skitala* s = new Skitala(str);
+						finalText += s->e();
+						delete s;
+						break;
+			}
 			}
 		}		
 		Fp.close();
@@ -467,15 +488,23 @@ public:
 			switch (algType)
 			{
 			case 'v':
-				Vigenere v(str, key);
-				finalText += v.d();
-				break;
+			{
+						Vigenere v(str, key);
+						finalText += v.d();
+						break;
+			}
+			case 's':
+			{
+						Skitala s(str);
+						finalText += s.d();
+						break;
+			}
 			}
 		}
 		if (wasDivided)
 		{
 			vector<int> o = translate(finalText);
-			finalText = string(finalText.begin(), finalText.end() - o[finalText.length() - 1] - 2);
+			finalText = string(finalText.begin(), finalText.end() - o[finalText.length() - 1] - 1);
 		}
 		Fp.close();
 		fstream Fc("decipheredText.txt");
@@ -487,14 +516,18 @@ public:
 	~ECB(){};
 };
 
+class CBC
+{
+
+};
+
 int main()
 {
 	try
 	{
 		ECB g("key");
-		g.e('v');
-		g.d('v');
-		
+		g.e('s', 'p');
+		g.d('s');
 	}
 	catch (exception& e)
 	{
