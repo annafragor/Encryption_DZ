@@ -161,6 +161,7 @@ int determ(vector<vector<int>> Arr, int size)
 			}
 			det += (int)pow(-1., (i + j))*determ(matr, size - 1)*Arr[i][size - 1];
 		}
+	//	vector<vector<int>>().swap(matr)
 	}
 	if (det >= 0)
 		det = det % 29;
@@ -257,7 +258,6 @@ public:
 				result += parchmentTable[i][j];
 			}
 		}
-
 		cout << "deciphered skitala: " << result << endl;
 		return result;
 	}
@@ -329,7 +329,7 @@ public:
 
 	~Vigenere(){};
 };
-
+											/*TYPES OF PADDING*/
 // DD DD DD DD 00 00 00 04 (block = 8 bytes)
 class ansiX923
 {
@@ -340,16 +340,61 @@ public:
 	{
 		fullblock += block;
 		vector<int> arr(8 - block.length());
+		for (int i = 0; i < 8 - block.length(); i++)
+			arr[i] = 0;
 		arr[8 - block.length() - 1] = 8 - block.length() - 1;
+		fullblock += translate(arr, 8 - block.length());
+	}
+
+	string add() 
+	{	return fullblock;	}
+
+	~ansiX923(){};
+};
+// DD DD DD DD 04 04 04 04 (block = 8 bytes) 
+class pkcs7
+{
+	string fullblock;
+public:
+	pkcs7(){};
+	pkcs7(string block) : fullblock("")
+	{
+		fullblock += block;
+		vector<int> arr(8 - block.length());
+		for (int i = 0; i < 8 - block.length(); i++)
+			arr[i] = 8 - block.length() - 1;
+		fullblock += translate(arr, 8 - block.length());
+	}
+
+	string add()
+	{	return fullblock; 	}
+
+	~pkcs7(){};
+};
+// DD DD DD DD 81 A6 23 04 ((empty-1) - random, last - number of empty) (block = 8 bytes) 
+class iso10126
+{
+	string fullblock;
+public:
+	iso10126(){};
+	iso10126(string block) : fullblock("")
+	{
+		fullblock += block;
+		vector<int> arr(8 - block.length());
+		srand((unsigned int)time(0));
+		for (unsigned int i = 0; i < 8 - block.length(); i++)
+		{
+			arr[i] = rand() % 29; //случайные числа от 0 до 255 (mod 29)
+		}
+		arr.push_back(8 - block.length() - 1);		
 		fullblock += translate(arr, 8 - block.length());
 	}
 
 	string add()
 	{	return fullblock;	}
 
-	~ansiX923(){};
+	~iso10126(){};
 };
-
 
 class ECB
 {
@@ -378,8 +423,12 @@ public:
 			}
 			if (str.length() != 8)
 			{
-				ansiX923 a(str);
-				str = a.add();
+				//ansiX923 a(str);
+				//str = a.add();
+				//pkcs7 p(str);
+				//str = p.add();
+				iso10126 i(str);
+				str = i.add();
 				wasDivided = true;
 			}
 			switch (algType)
@@ -409,7 +458,6 @@ public:
 			while (!Fp.eof())
 			{
 				Fp >> ch;
-				cout << endl << ch;
 				str += ch;
 				if (str.length() == 8)
 					break;
@@ -421,10 +469,8 @@ public:
 			case 'v':
 				Vigenere v(str, key);
 				finalText += v.d();
-				cout << "ftxt = " << finalText << endl;
 				break;
 			}
-			cout << "@ok";
 		}
 		if (wasDivided)
 		{
@@ -448,18 +494,7 @@ int main()
 		ECB g("key");
 		g.e('v');
 		g.d('v');
-
-
-		////Skitala WORKS
-		//Skitala s("abcdefgh");
-		//string ciph1 = s.e();
-		//Skitala ss(ciph1);
-		//ss.d();
-		////Vigenere WORKS
-		//Vigenere v("abcdefgh", "key");
-		//string ciph = v.e();
-		//Vigenere vv(ciph, "key");
-		//vv.d();
+		
 	}
 	catch (exception& e)
 	{
