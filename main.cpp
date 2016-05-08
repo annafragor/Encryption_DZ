@@ -1,7 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
-#include <string>
 #include <cstring>
+#include <string>
 #include <stdexcept>
 #include <algorithm>
 #include <cstdlib> //srand
@@ -55,7 +55,7 @@ int fromChar(char c)
 	case 'x': result = 23; break;
 	case 'y': result = 24; break;
 	case 'z': result = 25; break;
-	case ' ': result = 26; break;
+	case '|': result = 26; break;
 	case '.': result = 27; break;
 	case '?': result = 28; break;
 	default:
@@ -103,11 +103,11 @@ char fromInt(int i)
 	case 23: result = 'x'; break;
 	case 24: result = 'y'; break;
 	case 25: result = 'z'; break;
-	case 26: result = ' '; break;
+	case 26: result = '|'; break;
 	case 27: result = '.'; break;
 	case 28: result = '?'; break;
 	default:
-		throw out_of_range("wrong input symbol");
+		throw out_of_range("wrong input symbol!");
 	}
 	return result;
 }
@@ -159,9 +159,8 @@ int determ(vector<vector<int>> Arr, int size)
 				else
 					matr.push_back(Arr[j + 1]);
 			}
-			det += pow(-1., (i + j))*determ(matr, size - 1)*Arr[i][size - 1];
+			det += (int)pow(-1., (i + j))*determ(matr, size - 1)*Arr[i][size - 1];
 		}
-	//	vector<vector<int>>().swap(matr)
 	}
 	if (det >= 0)
 		det = det % 29;
@@ -215,7 +214,7 @@ public:
 			throw out_of_range("block for cipher skitala is unsuitable");
 	}
 
-	string cipher()
+	string e()
 	{
 		string result;
 		int k = 0;
@@ -237,7 +236,7 @@ public:
 		cout << endl << "ciphered skitala:   " << result << endl;
 		return result;
 	}
-	string decipher()
+	string d()
 	{
 		string result;
 		int k = 0;
@@ -259,14 +258,6 @@ public:
 			}
 		}
 
-		//vector<int> o = translate(result);
-		//if ((plTxt->ansiX923_ == true) || (plTxt->iso10126_ == true) || (plTxt->pkcs7_ == true)){
-		//	for (int i = 0; i < o[result.length() - 1] + 1; i++){
-		//		result.erase(result.begin() + (result.length() - 1));
-		//	}
-		//}
-		//	delete o;
-
 		cout << "deciphered skitala: " << result << endl;
 		return result;
 	}
@@ -274,155 +265,201 @@ public:
 	~Skitala(){};
 };
 
-class Hill // C = K*P; P = K^(-1)*C
-{	
-	vector<vector<int>> keyM; //key matrix
+class Vigenere
+{
+	char tabulaRecta[29][29];
+	string key;
 	string str; // what we want to chipher or decipher
 public:
-	Hill(){};
-	Hill(string str_v, int key_v) : str(str_v)
+	Vigenere(){};
+	Vigenere(string str_v, string keyword) : str(str_v)
 	{
-		srand(key_v);
-		for (int i = 0; i < 8; i++)
+		strcpy((char*)tabulaRecta[0], "abcdefghijklmnopqrstuvwxyz|.?");
+		for (int i = 1; i < 29; i++)
 		{
-			vector<int> temp;
-			for (size_t j = 0; j < 8; j++)
-				temp.push_back(rand() % 29);
-			keyM.push_back(temp);
-		}		
-
-		if (str.length() != 8)
-			throw out_of_range("block for cipher hill is unsuitable");
-	}
-
-	string cipher()
-	{
-		string result;
-		int ch = 0;
-		vector<int> p = translate(str); //вектор открытого текста
-		vector<int> c;
-		for (int i = 0; i < 8; i++){
-			for (int j = 0; j < 8; j++)
-				ch += keyM[i][j] * p[j];
-			c.push_back(ch % 29);
+			for (int j = 0; j < 28; j++)
+				tabulaRecta[i][j] = tabulaRecta[i - 1][j + 1];
+			tabulaRecta[i][28] = tabulaRecta[i - 1][0];
 		}
-		result += translate(c, 8);
-		cout << endl << "want to cipher:  " << str;
-		cout << endl << "ciphered hill:   " << result << endl;
-		return result;
-	}
-	string decipher()
-	{
-		keyM = invMatr(keyM);
-		cout << "ok";
-		string pD = "";//deciphered plain text
-		vector<int> c = translate(str); //we want to decipher this string
-		vector<int> p(8); //here we'll write deciphered string in numbers
 
-		for (int i = 0; i < 8; i++){
-			int ph = 0;
-			for (int j = 0; j < 8; j++)
-				ph += keyM[i][j] * c[j];
-			p.push_back(ph % 29);
-		}
-		
-		pD += translate(p, 8);
-//		cout << "pD =             " << pD << endl;
-		cout << "deciphered hill: " << pD << endl;
-		return pD;
-	}
-
-	friend vector<vector<int>> invMatr(vector<vector<int>>);
-	friend class PlainText;
-
-	~Hill(){}
-};
-
-vector<vector<int>> A(vector<vector<int>> matr, int y, int x) //алгебраическое дополнение в данной ячейке матрицы matr
-{
-	vector<vector<int>> add;
-	for (int i = 0; i < 7; i++)
-	{
-		vector<int> temp;
-		for (size_t j = 0; j < 7; j++)
-			temp.push_back(0);
-		add.push_back(temp);
-	}
-
-	for (int i = 0; i < 8; i++)
-	{
-		for (int j = 0; j < 8; j++)
+		if (keyword.length() == 8)
+			key = keyword;
+		else
 		{
-			if (i < x && j < y)
-				add[i][j] = matr[i][j];
-			else if (i < x && j > y)
-				add[i][j - 1] = matr[i][j];
-			else if (i > x && j < y)
-				add[i - 1][j] = matr[i][j];
-			else if (i>x && j>y)
-				add[i - 1][j - 1] = matr[i][j];
-			else if (i == x || j == y)
-				continue;
-		}
-	}
-	return add;
-}
-vector<vector<int>> invMatr(vector<vector<int>> matr/*size = 8*/)
-{
-	int invDet = inv(determ(matr, 8), 29);
-	cout << "," << endl;
-
-	vector<vector<int>> invM;
-	for (int i = 0; i < 8; i++)
-	{
-		vector<int> temp;
-		for (size_t j = 0; j < 8; j++)
-			temp.push_back(rand() % 29);
-		invM.push_back(temp);
-	}
-	vector<vector<int>> add;
-	cout << "ok" << endl;
-
-	for (int i = 0; i < 8; i++)
-	{
-		for (int j = 0; j < 8; j++)
-		{
-			add = A(matr, i, j);
-			invM[j][i] = determ(add, 7) * invDet * (int)pow(-1., (i + j));
-			cout << ".";
-			//invM[i][j] = determ(add, 7);
-			//invM[i][j] = invM[i][j] * invDet;
-			//invM[i][j] = invM[i][j] * (int)pow(-1., (i + j));
-			//invM = transp(invM, 8);
-			if (invM[i][j] >= 0)
-				invM[i][j] = invM[i][j] % 29;
-			else{
-				while (invM[i][j] < 0)
-					invM[i][j] += 29;
+			for (unsigned int i = 0; i < 8 / keyword.length(); i++)
+				key += keyword;
+			for (unsigned int i = 0; i < 8 % keyword.length(); i++)
+			{
+				key += keyword[i];
 			}
 		}
 	}
-	//for (int i = 0; i < 8; i++)
-	//for (int j = 0; j < 8; j++)
-	//	matr[i][j] = invM[i][j];
-	return matr;
-}
 
+	string e()
+	{
+		string result;
+
+		for (int i = 0; i < 8; i++)
+		{
+			result += tabulaRecta[fromChar(key[i])][fromChar(str[i])];
+		}
+		cout << "want to cipher:      " << str << endl;
+		cout << "ciphered vigenere:   " << result << endl;
+		return result;
+	}
+	string d()
+	{
+		string result;
+		int k = 0;
+
+		for (int i = 0; i < 8; i++)
+		{
+			k = 0;
+			while (tabulaRecta[fromChar(key[i])][k] != str[i])
+			{
+				k++;
+			}
+			result += fromInt(k);
+		}
+		cout << "want to decipher:    " << str << endl;
+		cout << "deciphered vigenere: " << result << endl;
+
+		return result;
+	}
+
+	~Vigenere(){};
+};
+
+// DD DD DD DD 00 00 00 04 (block = 8 bytes)
+class ansiX923
+{
+	string fullblock;
+public:
+	ansiX923(){};
+	ansiX923(string block) : fullblock("")
+	{
+		fullblock += block;
+		vector<int> arr(8 - block.length());
+		arr[8 - block.length() - 1] = 8 - block.length() - 1;
+		fullblock += translate(arr, 8 - block.length());
+	}
+
+	string add()
+	{	return fullblock;	}
+
+	~ansiX923(){};
+};
+
+
+class ECB
+{
+	string key;
+	string finalText;
+	bool wasDivided;
+public:
+	ECB() : key(""), finalText(""), wasDivided(false) {};
+	ECB(string key_v) : key(key_v), finalText(""), wasDivided(false) {}; //for Vigenere
+
+	string e(char algType)
+	{
+		string str;
+		char ch;
+		fstream Fp("plainText.txt");
+		Fp.seekg(0, ios_base::beg);
+		while (!Fp.eof())
+		{
+			str = "";
+			while (!Fp.eof())
+			{
+				Fp >> ch;
+				str += ch;
+				if (str.length() == 8)
+					break;
+			}
+			if (str.length() != 8)
+			{
+				ansiX923 a(str);
+				str = a.add();
+				wasDivided = true;
+			}
+			switch (algType)
+			{
+			case 'v':
+				Vigenere* v = new Vigenere(str, key);
+				finalText += v->e();
+				delete v;
+				break;
+			}
+		}		
+		Fp.close();
+		fstream Fс("cipheredText.txt");
+		Fс << finalText;
+		Fс.close();
+		return str;
+	}
+	string d(char algType)
+	{
+		string str;
+		char ch;
+		finalText = "";
+		fstream Fp("cipheredText.txt");
+		while (!Fp.eof())
+		{
+			str = "";
+			while (!Fp.eof())
+			{
+				Fp >> ch;
+				cout << endl << ch;
+				str += ch;
+				if (str.length() == 8)
+					break;
+			}
+			if (str.length() != 8)
+				break;
+			switch (algType)
+			{
+			case 'v':
+				Vigenere v(str, key);
+				finalText += v.d();
+				cout << "ftxt = " << finalText << endl;
+				break;
+			}
+			cout << "@ok";
+		}
+		if (wasDivided)
+		{
+			vector<int> o = translate(finalText);
+			finalText = string(finalText.begin(), finalText.end() - o[finalText.length() - 1] - 2);
+		}
+		Fp.close();
+		fstream Fc("decipheredText.txt");
+		Fc << "fTxt = " << finalText;
+		Fc.close();
+		return str;
+	}
+
+	~ECB(){};
+};
 
 int main()
 {
 	try
 	{
+		ECB g("key");
+		g.e('v');
+		g.d('v');
+
+
+		////Skitala WORKS
 		//Skitala s("abcdefgh");
-		//string ciph = s.cipher();
-		//Skitala ss(ciph);
-		//ss.decipher();
-
-
-		Hill h("abcdefgh", 5); //5 - key, "abcdefgh" - we wanna decipher
-		string ciph = h.cipher();
-		Hill hh(ciph, 5);
-		hh.decipher();
+		//string ciph1 = s.e();
+		//Skitala ss(ciph1);
+		//ss.d();
+		////Vigenere WORKS
+		//Vigenere v("abcdefgh", "key");
+		//string ciph = v.e();
+		//Vigenere vv(ciph, "key");
+		//vv.d();
 	}
 	catch (exception& e)
 	{
