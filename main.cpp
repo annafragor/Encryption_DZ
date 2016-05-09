@@ -194,6 +194,38 @@ vector<vector<int>> transp(vector<vector<int>> matr, int n)
 	}
 	return matr;
 }
+vector<int> summ(vector<int> v1, vector<int> v2)
+{
+	vector<int> result(v1.size());
+	if (v1.size() != v2.size())
+		throw out_of_range("vectors can't be folded\n");
+	for (unsigned int i = 0; i < v1.size(); i++){
+		result[i] = v2[i] + v1[i];
+		if (result[i] >= 0)
+			result[i] = result[i] % 29;
+		else{	
+			while (result[i] < 0)
+				result[i] += 29;
+		}
+	}
+	return result;
+}
+vector<int> delta(vector<int> d, vector<int> vect) //d - vect
+{
+	vector<int> result(d.size());
+	if (d.size() != vect.size())
+		throw out_of_range("vectors can't be subtracted\n");
+	for (unsigned int i = 0; i < d.size(); i++){
+		result[i] = d[i] - vect[i];
+		if (result[i] >= 0)
+			result[i] = result[i] % 29;
+		else{
+			while (result[i] < 0)
+				result[i] += 29;
+		}
+	}
+	return result;
+}
 
 class Skitala //минус - первый и последний символ совпадают
 {
@@ -257,6 +289,7 @@ public:
 		cout << "deciphered skitala: " << result << endl;
 		return result;
 	}
+
 	~Skitala(){};
 };
 
@@ -321,6 +354,16 @@ public:
 
 		return result;
 	}
+
+	void print()
+	{
+		for (int i = 0; i < 29; i++){
+			for (int j = 0; j < 29; j++)
+				cout << tabulaRecta[i][j] << " ";
+			cout << endl;
+		}
+	}
+
 	~Vigenere(){};
 };
 											/*TYPES OF PADDING*/
@@ -334,7 +377,7 @@ public:
 	{
 			fullblock += block;
 			vector<int> arr(8 - block.length());
-			for (int i = 0; i < 8 - block.length(); i++)
+			for (unsigned int i = 0; i < 8 - block.length(); i++)
 				arr[i] = 0;
 			arr[8 - block.length() - 1] = 8 - block.length() - 1;
 			fullblock += translate(arr, 8 - block.length());
@@ -354,7 +397,7 @@ public:
 	{
 			fullblock += block;
 			vector<int> arr(8 - block.length());
-			for (int i = 0; i < 8 - block.length(); i++)
+			for (unsigned int i = 0; i < 8 - block.length(); i++)
 				arr[i] = 8 - block.length() - 1;
 			fullblock += translate(arr, 8 - block.length());
 	}
@@ -538,8 +581,6 @@ public:
 		fstream Fp("plainText.txt");
 		Fp.seekg(0, ios_base::beg);
 
-		string ppp = "";
-
 		while (!Fp.eof())
 		{
 			str = "";
@@ -550,8 +591,7 @@ public:
 				if (str.length() == 8)
 					break;
 			}
-			cout << "!!!str = " << str << endl;
-			if (str.length() != 8) /*|| (str.length() != 0)*/
+			if (str.length() != 8)
 			{
 				str = string(str.begin(), str.end() - 1);
 				switch (paddingType)
@@ -560,7 +600,6 @@ public:
 				{
 							iso10126 is(str);
 							str = is.add();
-							ppp += str;
 							break;
 				}
 				case 'a':
@@ -582,8 +621,6 @@ public:
 			{
 			case 'v':
 			{
-						ppp += str;
-
 						vector<int> vec = translate(vect);
 						vector<int> p = translate(str);
 						str = translate(summ(p, vec), p.size());
@@ -595,8 +632,6 @@ public:
 			}
 			case 's':
 			{
-						ppp += str;
-
 						vector<int> vec = translate(vect);
 						vector<int> p = translate(str);
 						str = translate(summ(p, vec), p.size());
@@ -609,9 +644,6 @@ public:
 			}
 		}
 		Fp.close();
-
-		cout << "pltxt = " << ppp << endl;
-
 		fstream Fс("cipheredText.txt");		
 		Fс << finalText;
 		Fс.close();
@@ -674,43 +706,153 @@ public:
 		Fc.close();
 		return str;
 	}
-
-
-	friend vector<int> summ(vector<int>, vector<int>);
-	friend vector<int> delta(vector<int>, vector<int>);
 	~CBC(){};
 };
 
-vector<int> summ(vector<int> v1, vector<int> v2)
+class OFB
 {
-	if (v1.size() != v2.size())
-		throw out_of_range("vectors can't be folded\n");
-	for (int i = 0; i < v1.size(); i++){
-		v2[i] += v1[i];
-		if (v2[i] >=0)
-			v2[i] = v2[i] % 29;
-		else{
-			while (v2[i] < 0)
-				v2[i] += 29; }
+	string vect;
+	string key;
+	string finalText;
+	bool wasDivided;
+public:
+	OFB(){};
+	OFB(string key_v, string vect_v) : key(key_v), vect(""),
+		finalText(""), wasDivided(false){
+		if (vect_v.length() > 8)
+			throw out_of_range("too long vector for CBC");
+		else
+			vect = vect_v;
 	}
-	return v2;
-}
-vector<int> delta(vector<int> d, vector<int> vect)
-{
-	vector<int> result(d.size());
-	if (d.size() != vect.size())
-		throw out_of_range("vectors can't be subtracted\n");
-	for (int i = 0; i < d.size(); i++){
-		result[i] = d[i] - vect[i];
-		if (result[i] >= 0)
-			result[i] = result[i] % 29;
-		else{
-			while (result[i] < 0)
-				result[i] += 29;
+
+	string e(char algType, char paddingType)
+	{
+		string str;
+		char ch;
+		finalText = "";
+		fstream Fp("plainText.txt");
+		Fp.seekg(0, ios_base::beg);
+
+		while (!Fp.eof())
+		{
+			str = "";
+			while (!Fp.eof())
+			{
+				Fp >> ch;
+				str += ch;
+				if (str.length() == 8)
+					break;
+			}
+			if (str.length() != 8) /*|| (str.length() != 0)*/
+			{
+				str = string(str.begin(), str.end() - 1);
+				switch (paddingType)
+				{
+				case 'i':
+				{
+							iso10126 is(str);
+							str = is.add();
+							break;
+				}
+				case 'a':
+				{
+							ansiX923 ans(str);
+							str = ans.add();
+							break;
+				}
+				case 'p':
+				{
+							pkcs7 pk(str);
+							str = pk.add();
+							break;
+				}
+				}
+				wasDivided = true;
+			}
+			switch (algType)
+			{
+			case 'v':
+			{
+						Vigenere* v = new Vigenere(vect, key);
+						vect = v->e();
+						finalText += translate(summ(translate(vect), translate(str)), str.length());
+						delete v;
+						break;
+			}
+			case 's':
+			{
+						Skitala* s = new Skitala(vect);
+						vect = s->e();
+						finalText += translate(summ(translate(vect), translate(str)), str.length());
+						delete s;
+						break;
+			}
+			}
 		}
+		Fp.close();
+		fstream Fс("cipheredText.txt");
+		Fс << finalText;
+		Fс.close();
+		return str;
 	}
-	return result;
-}
+	string d(char algType, string vect_v)
+	{
+		string str;
+		char ch;
+		finalText = "";
+		vect = vect_v;
+		fstream Fp("cipheredText.txt");
+		while (!Fp.eof())
+		{
+			str = "";
+			while (!Fp.eof())
+			{
+				Fp >> ch;
+				str += ch;
+				if (str.length() == 8)
+					break;
+			}
+			if (str.length() != 8)
+				break;
+			switch (algType)
+			{
+			case 'v':
+			{
+						Vigenere* v = new Vigenere(vect, key);
+						vect = v->e();
+						delete v;
+						finalText += translate(delta(translate(str), translate(vect)), vect.length());
+						break;
+			}
+			case 's':
+			{
+						Skitala* s = new Skitala(vect);
+						vect = s->e();
+						delete s;
+						finalText += translate(delta(translate(str), translate(vect)), vect.length());
+						break;
+			}
+			}
+		}
+		cout << endl << "fTxt =  " << finalText << endl;
+		if (wasDivided)
+		{
+			vector<int> o = translate(finalText);
+			finalText = string(finalText.begin(), finalText.end() - (o[finalText.length() - 1]) - 1);
+		}
+		Fp.close();
+		cout << "fTxt =  " << finalText << endl;
+		fstream Fc("decipheredText.txt");
+		Fc << "fTxt = " << finalText;
+		Fc.close();
+		return str;
+
+	}
+
+	~OFB(){};
+};
+
+
 
 int main()
 {
@@ -718,13 +860,17 @@ int main()
 	{
 		//WORK
 		//ECB g("key");
-		//g.e('s', 'p');
-		//g.d('s');
+		//g.e('v', 'i');
+		//g.d('v');
 
 		//WORK
 		//CBC c("key", "qwertyui");
 		//c.e('s', 'i');
 		//c.d('s', "qwertyui");
+
+		OFB o("key", "qwertyui");
+		o.e('s', 'i');
+		o.d('s', "qwertyui");
 	}
 	catch (exception& e)
 	{
