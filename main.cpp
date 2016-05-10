@@ -6,20 +6,8 @@
 #include <time.h>
 #include <vector>
 #include <fstream>
-
+#include <conio.h>
 using namespace std;
-
-class Err
-{
-	int k;
-public:
-	Err(int k_v) : k(k_v){};
-	int errType() const
-	{
-		return k;
-	}
-	~Err(){};
-};
 
 int fromChar(char c)
 {
@@ -120,7 +108,7 @@ string translate(vector<int> arr, int length)
 int inv(int num, int mod)
 {
 	if (num >= mod)
-		throw Err(4);
+		throw out_of_range("wrong number for inv");
 	int i = 0;
 	int pr = -1;
 	while (pr%mod != 1)
@@ -132,11 +120,11 @@ int inv(int num, int mod)
 	}
 	return i;
 }
-int determ(vector<vector<int>> Arr, int size)
+int determ(int** Arr, int size)
 {
 	int i, j;
 	int det = 0;
-	vector<vector<int>> matr;
+	int** matr;
 	if (size == 1)
 	{
 		det = Arr[0][0];
@@ -147,18 +135,19 @@ int determ(vector<vector<int>> Arr, int size)
 	}
 	else
 	{
+		matr = new int*[size - 1];
 		for (i = 0; i < size; ++i)
 		{
 			for (j = 0; j < size - 1; ++j)
 			{
 				if (j < i)
-					matr.push_back(Arr[j]);
+					matr[j] = Arr[j];
 				else
-					matr.push_back(Arr[j + 1]);
+					matr[j] = Arr[j + 1];
 			}
-			det += (int)pow(-1., (i + j))*determ(matr, size - 1)*Arr[i][size - 1];
+			det += (double)pow(-1., (i + j))*determ(matr, size - 1)*Arr[i][size - 1];
 		}
-	//	vector<vector<int>>().swap(matr)
+		delete[] matr;
 	}
 	if (det >= 0)
 		det = det % 29;
@@ -181,7 +170,7 @@ bool ifZeroStr(int* str, int n)
 	else
 		return false;
 }
-vector<vector<int>> transp(vector<vector<int>> matr, int n)
+int** transp(int** matr, int n)
 {
 	for (int i = 0; i < n; i++)
 	{
@@ -194,7 +183,6 @@ vector<vector<int>> transp(vector<vector<int>> matr, int n)
 	}
 	return matr;
 }
-
 vector<int> summ(vector<int> v1, vector<int> v2)
 {
 	vector<int> result(v1.size());
@@ -227,10 +215,6 @@ vector<int> delta(vector<int> d, vector<int> vect) //d - vect
 	}
 	return result;
 }
-
-
-
-
 
 class Skitala //минус - первый и последний символ совпадают
 {
@@ -368,10 +352,130 @@ public:
 			cout << endl;
 		}
 	}
-
 	~Vigenere(){};
 };
-											/*TYPES OF PADDING*/
+
+class Hill 
+{
+	int** k; // key matrix 8x8
+	string str; // what we want to chipher or decipher
+public:
+	Hill(){};
+	Hill(string str_v, int key_) : str(str_v)
+	{
+		srand(key_);
+		k = new int*[8];
+		for (int i = 0; i < 8; i++){
+			k[i] = new int[8];
+			for (int j = 0; j < 8; j++)
+				k[i][j] = rand() % 29;
+		}
+	}
+
+	string e()
+	{
+		string result;
+		vector<int> p = translate(str); // plain text vector
+		vector<int> c(8); // coph text vector
+		
+		for (int i = 0; i < 8; i++)
+		{
+			for (int j = 0; j < 8; j++)
+				c[i] += k[i][j] * p[j];
+			c[i] = c[i] % 29;
+		}
+		result = translate(c, 8);		
+		cout << endl << "want to cipher:  " << str;
+		cout << endl << "ciphered hill:   " << result << endl;
+		return result;
+	}
+	string d()
+	{
+		string result;
+		k = invMatr(k);
+		vector<int> c = translate(str);
+		vector<int> p(8);
+		for (int i = 0; i < 8; i++){
+			for (int j = 0; j < 8; j++)
+				p[i] += k[i][j] * c[j];
+			p[i] = p[i] % 29;
+		}
+		result = translate(p, 8);		
+		cout << "deciphered hill: " << result << endl;
+		return result;
+	}
+
+	friend int** invMatr(int**);
+	friend class PlainText;
+	~Hill()
+	{
+		for (int i = 0; i < 8; i++)
+			delete[] k[i];
+		delete[] k;
+	}
+};
+int** A(int** matr, int y, int x) //алгебраическое дополнение в данной ячейке матрицы matr
+{
+	int** add = new int*[7];
+	for (int i = 0; i < 7; i++)
+		add[i] = new int[7];
+
+	for (int i = 0; i < 8; i++)
+	{
+		for (int j = 0; j < 8; j++)
+		{
+			if (i < x && j < y)
+				add[i][j] = matr[i][j];
+			else if (i < x && j > y)
+				add[i][j - 1] = matr[i][j];
+			else if (i > x && j < y)
+				add[i - 1][j] = matr[i][j];
+			else if (i>x && j>y)
+				add[i - 1][j - 1] = matr[i][j];
+			else if (i == x || j == y)
+				continue;
+		}
+	}
+	return add;
+}
+int** invMatr(int** matr/*size = 8*/)
+{
+	int invDet = inv(determ(matr, 8), 29);
+	int** invM = new int*[8];
+	for (int i = 0; i < 8; i++)
+		invM[i] = new int[8];
+	int** add;
+
+	for (int i = 0; i < 8; i++)
+	{
+		for (int j = 0; j < 8; j++)
+		{
+			add = A(matr, i, j);
+			invM[i][j] = determ(add, 7) * invDet * pow(-1., (i + j));
+			invM = transp(invM, 8);
+			if (invM[i][j] >= 0)
+				invM[i][j] = invM[i][j] % 29;
+			else{
+				while (invM[i][j] < 0)
+					invM[i][j] += 29;
+			}
+		}
+	}
+
+	for (int i = 0; i < 8; i++)
+	for (int j = 0; j < 8; j++)
+		matr[i][j] = invM[i][j];
+
+	for (int i = 0; i < 8; i++)
+		delete[] invM[i];
+	delete[] invM;
+	for (int i = 0; i < 7; i++)
+		delete[] add[i];
+	delete[] add;
+	return matr;
+}
+
+					/*TYPES OF PADDING*/
 // DD DD DD DD 00 00 00 04 (block = 8 bytes)
 class ansiX923
 {
@@ -425,7 +529,7 @@ public:
 			srand((unsigned int)time(0));
 			for (unsigned int i = 0; i < 8 - block.length(); i++)
 			{
-				arr[i] = rand() % 29; //случайные числа от 0 до 255 (mod 29)
+				arr[i] = rand() % 29;
 			}
 			arr[8 - block.length() - 1] = 8 - block.length() - 1;
 			fullblock += translate(arr, 8 - block.length());
@@ -440,18 +544,18 @@ public:
 class ECB
 {
 	string key;
+	int k;
 	string finalText;
 	bool wasDivided;
 public:
-	ECB() : key(""), finalText(""), wasDivided(false) {};
-	ECB(string key_v) : key(key_v), finalText(""), wasDivided(false) {}; //for Vigenere
+	ECB() : key(""), finalText(""), k(0), wasDivided(false) {}; //for Skitala
+	ECB(string key_v, int k_v) : key(key_v), finalText(""), wasDivided(false), k(k_v) {}; //for Vigenere
 
 	string e(char algType, char paddingType)
 	{
 		string str;
 		char ch;
 		fstream Fp("plainText.txt");
-		Fp.seekg(0, ios_base::beg);
 		while (!Fp.eof())
 		{
 			str = "";
@@ -504,6 +608,13 @@ public:
 						delete s;
 						break;
 			}
+			case 'h':
+			{
+						Hill* h = new Hill(str, k);
+						finalText += h->e();
+						delete h;
+						break;
+			}
 			}
 		}		
 		Fp.close();
@@ -544,6 +655,12 @@ public:
 						finalText += s.d();
 						break;
 			}
+			case 'h':
+			{
+						Hill h(str, k);
+						finalText += h.d();
+						break;
+			}
 			}
 		}
 		if (wasDivided)
@@ -557,6 +674,7 @@ public:
 		Fc.close();
 		return str;
 	}
+
 	~ECB(){};
 };
 
@@ -564,14 +682,15 @@ class CBC
 {
 	string vect;
 	string key;
+	int k;
 	string finalText;
 	bool wasDivided;
 public:
 	CBC(){};
-	CBC(string key_v, string vect_v) : key(key_v), vect(""), 
+	CBC(string key_v, string vect_v, int k_v) : key(key_v), k(k_v), vect(""), 
 		finalText(""), wasDivided(false)
 	{
-		if (vect_v.length() > 8)
+		if (vect_v.length() != 8)
 			throw out_of_range("too long vector for CBC");
 		else
 			vect = vect_v;
@@ -628,10 +747,9 @@ public:
 						vector<int> vec = translate(vect);
 						vector<int> p = translate(str);
 						str = translate(summ(p, vec), p.size());
-						Vigenere* v = new Vigenere(str, key);
-						vect = v->e();
+						Vigenere v(str, key);
+						vect = v.e();
 						finalText += vect;
-						delete v;
 						break;
 			}
 			case 's':
@@ -639,10 +757,19 @@ public:
 						vector<int> vec = translate(vect);
 						vector<int> p = translate(str);
 						str = translate(summ(p, vec), p.size());
-						Skitala* s = new Skitala(str);
-						vect = s->e();
+						Skitala s(str);
+						vect = s.e();
 						finalText += vect;
-						delete s;
+						break;
+			}
+			case 'h':
+			{
+						vector<int> vec = translate(vect);
+						vector<int> p = translate(str);
+						str = translate(summ(p, vec), p.size());
+						Hill h(str, k);
+						vect = h.e();
+						finalText += vect;
 						break;
 			}
 			}
@@ -686,11 +813,20 @@ public:
 			}
 			case 's':
 			{
-						cout << str;
 						vector<int> vec = translate(vect);
 						vector<int> p = translate(str);
 						Skitala s(str);
 						string dd = s.d();
+						finalText += translate(delta(translate(dd), vec), dd.size());
+						vect = str;
+						break;
+			}
+			case 'h':
+			{
+						vector<int> vec = translate(vect);
+						vector<int> p = translate(str);
+						Hill h(str, k);
+						string dd = h.d();
 						finalText += translate(delta(translate(dd), vec), dd.size());
 						vect = str;
 						break;
@@ -717,18 +853,19 @@ class OFB
 {
 	string vect;
 	string key;
+	int k;
 	string finalText;
 	bool wasDivided;
 public:
 	OFB(){};
-	OFB(string key_v, string vect_v) : key(key_v), vect(""),
+	OFB(string key_v, string vect_v, int k_v) : key(key_v), k(k_v), vect(""),
 		finalText(""), wasDivided(false){
-		if (vect_v.length() > 8)
-			throw out_of_range("too long vector for CBC");
+		if (vect_v.length() != 8)
+			throw out_of_range("too long vector for OFB");
 		else
 			vect = vect_v;
 	}
-
+	
 	string e(char algType, char paddingType)
 	{
 		string str;
@@ -747,7 +884,7 @@ public:
 				if (str.length() == 8)
 					break;
 			}
-			if (str.length() != 8) /*|| (str.length() != 0)*/
+			if (str.length() != 8)
 			{
 				str = string(str.begin(), str.end() - 1);
 				switch (paddingType)
@@ -777,18 +914,23 @@ public:
 			{
 			case 'v':
 			{
-						Vigenere* v = new Vigenere(vect, key);
-						vect = v->e();
+						Vigenere v(vect, key);
+						vect = v.e();
 						finalText += translate(summ(translate(vect), translate(str)), str.length());
-						delete v;
 						break;
 			}
 			case 's':
 			{
-						Skitala* s = new Skitala(vect);
-						vect = s->e();
+						Skitala s(vect);
+						vect = s.e();
 						finalText += translate(summ(translate(vect), translate(str)), str.length());
-						delete s;
+						break;
+			}
+			case 'h':
+			{
+						Hill h(vect, k);
+						vect = h.e();
+						finalText += translate(summ(translate(vect), translate(str)), str.length());
 						break;
 			}
 			}
@@ -822,17 +964,22 @@ public:
 			{
 			case 'v':
 			{
-						Vigenere* v = new Vigenere(vect, key);
-						vect = v->e();
-						delete v;
+						Vigenere v(vect, key);
+						vect = v.e();
 						finalText += translate(delta(translate(str), translate(vect)), vect.length());
 						break;
 			}
 			case 's':
 			{
-						Skitala* s = new Skitala(vect);
-						vect = s->e();
-						delete s;
+						Skitala s(vect);
+						vect = s.e();
+						finalText += translate(delta(translate(str), translate(vect)), vect.length());
+						break;
+			}
+			case 'h':
+			{
+						Hill h(vect, k);
+						vect = h.e();
 						finalText += translate(delta(translate(str), translate(vect)), vect.length());
 						break;
 			}
@@ -850,6 +997,7 @@ public:
 		Fc << "fTxt = " << finalText;
 		Fc.close();
 		return str;
+
 	}
 
 	~OFB(){};
@@ -859,17 +1007,19 @@ class CFB
 {
 	string vect;
 	string key;
+	int k;
 	string finalText;
 	bool wasDivided;
 public:
 	CFB(){};
-	CFB(string key_v, string vect_v) : key(key_v), vect(""),
+	CFB(string key_v, string vect_v, int k_v) : key(key_v), k(k_v), vect(""),
 		finalText(""), wasDivided(false){
-		if (vect_v.length() > 8)
+		if (vect_v.length() != 8)
 			throw out_of_range("too long vector for CFB");
 		else
 			vect = vect_v;
 	}
+
 	string e(char algType, char paddingType)
 	{
 		string str;
@@ -888,7 +1038,7 @@ public:
 				if (str.length() == 8)
 					break;
 			}
-			if (str.length() != 8) /*|| (str.length() != 0)*/
+			if (str.length() != 8)
 			{
 				str = string(str.begin(), str.end() - 1);
 				switch (paddingType)
@@ -918,18 +1068,23 @@ public:
 			{
 			case 'v':
 			{
-						Vigenere* v = new Vigenere(vect, key);
-						vect = translate(summ(translate(v->e()), translate(str)), vect.length());
+						Vigenere v(vect, key);
+						vect = translate(summ(translate(v.e()), translate(str)), vect.length());
 						finalText += vect;
-						delete v;
 						break;
 			}
 			case 's':
 			{
-						Skitala* s = new Skitala(vect);
-						vect = translate(summ(translate(s->e()), translate(str)), vect.length());
+						Skitala s(vect);
+						vect = translate(summ(translate(s.e()), translate(str)), vect.length());
 						finalText += vect;
-						delete s;
+						break;
+			}
+			case 'h':
+			{
+						Hill h(vect, k);
+						vect = translate(summ(translate(h.e()), translate(str)), vect.length());
+						finalText += vect;
 						break;
 			}
 			}
@@ -963,18 +1118,23 @@ public:
 			{
 			case 'v':
 			{
-						Vigenere* v = new Vigenere(vect, key);
-						finalText += translate(delta(translate(str), translate(v->e())), str.length());
+						Vigenere v(vect, key);
+						finalText += translate(delta(translate(str), translate(v.e())), str.length());
 						vect = str;
-						delete v;
 						break;
 			}
 			case 's':
 			{
-						Skitala* s = new Skitala(vect);
-						finalText += translate(delta(translate(str), translate(s->e())), str.length());
+						Skitala s(vect);
+						finalText += translate(delta(translate(str), translate(s.e())), str.length());
 						vect = str;
-						delete s;
+						break;
+			}
+			case 'h':
+			{
+						Hill h(vect, k);
+						finalText += translate(delta(translate(str), translate(h.e())), str.length());
+						vect = str;
 						break;
 			}
 			}
@@ -996,37 +1156,100 @@ public:
 	~CFB(){};
 };
 
-
 int main()
 {
 	try
 	{
-		//WORK
-		//ECB g("key");
-		//g.e('v', 'i');
-		//g.d('v');
+		ofstream f("cipheredText.txt");
+		f.close();
+		ofstream ff("decipheredText.txt");
+		ff.close();
+		string vect;
+		string key; //for vigenere
+		int k; //for hill
+		cout << "Text, you want to encrypt, must be in 'plainText.txt'." << endl;
+		cout << "There must be NO spaces in your text. Replace them with '|'" << endl;
+		cout << "Ciphered and deciphered texts you will find in 'cipheredText.txt' and \n'decipheredText.txt'." << endl;
+		cout << endl << "ECB = 'e'; CBC = 'c'; OFB = 'o'; CFB = 'f'" << endl;
+		cout << "write block cipher mode: ";
+		char mode = _getch(); cout << mode << endl;
+		if ((mode != 'e')||(mode != 'c')||(mode != 'o')||(mode != 'f'))
+			mode = 'e'; // ECB 
+		if (mode != 'e')
+		{
+			cout << "write your vector. NO SPACES \n(!!) vector.length() = 8 (!!)" << endl;
+			cin >> vect;			
+		}
 
-		//WORK
-		//CBC c("key", "qwertyui");
-		//c.e('s', 'i');
-		//c.d('s', "qwertyui");
+		cout << endl << "PKCS7 = 'p'; ANSI X.923 = 'a'; ISO 10126 = 'i'" << endl;
+		cout << "write type of padding: ";
+		char paddingType = _getch(); cout << paddingType << endl;
+		if ((paddingType != 'p') || (paddingType != 'a') || (paddingType != 'i'))
+			paddingType = 'p'; // PKCS7 
+		cout << endl << "Skitala = 's'; Vigenere = 'v'; Hill = 'h'" << endl;
+		cout << "write algorithm: ";
+		char alg = _getch(); cout << alg << endl;
+		if ((alg != 's') && (alg != 'v') && (alg != 'h')){
+			cout << "alg = " << alg << endl;
+			cout << "It seems like you don't want to encrypt anything." << endl;
+			_getch();
+			return 0;
+		}
 
-		//WORK
-		//OFB o("key", "qwertyui");
-		//o.e('s', 'i');
-		//o.d('s', "qwertyui");
-
-		//WORK
-		//CFB f("key", "qwertyui");
-		//f.e('s', 'i');
-		//f.d('s', "qwertyui");
-
+		switch (alg)
+		{
+		case 's':
+			k = 0; key = "";
+			break;
+		case 'v':
+			cout << "write your keyword: "; cin >> key;
+			k = 0;
+			break;
+		case 'h':
+			cout << "write you key number for matrix: "; cin >> k;
+			key = "";
+			break;
+		default:
+			break;
+		}
+		switch (mode)
+		{
+		case 'e':
+		{
+					ECB obj(key, k);
+					obj.e(alg, paddingType);
+					obj.d(alg);
+					break;
+		}
+		case 'c':
+		{
+					CBC obj(key, vect, k);
+					obj.e(alg, paddingType);
+					obj.d(alg, vect);
+					break;
+		}
+		case 'o':
+		{
+					OFB obj(key, vect, k);
+					obj.e(alg, paddingType);
+					obj.d(alg, vect);
+					break;
+		}
+		case 'f':
+		{
+					CFB obj(key, vect, k);
+					obj.e(alg, paddingType);
+					obj.d(alg, vect);
+					break;
+		}
+		default:
+			break;
+		}
 	}
 	catch (exception& e)
 	{
 		cerr << e.what() << endl;
 	}
-
 	system("pause");
 	return 0;
 }
