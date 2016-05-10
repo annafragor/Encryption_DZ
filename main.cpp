@@ -84,19 +84,6 @@ int determ(int** Arr, int size)
 	}
 	return det;
 }
-bool ifZeroStr(int* str, int n)
-{
-	int k = 0;
-	for (int i = 0; i < n; i++)
-	{
-		if (str[i] != 0)
-			k++;
-	}
-	if (k == 0)
-		return true;
-	else
-		return false;
-}
 int** transp(int** matr, int n)
 {
 	for (int i = 0; i < n; i++)
