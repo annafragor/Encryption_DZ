@@ -389,70 +389,48 @@ int** invMatr(int** matr/*size = 8*/)
 	return matr;
 }
 
-					/*TYPES OF PADDING*/
-// DD DD DD DD 00 00 00 04 (block = 8 bytes)
-class ansiX923
+class Padding
 {
-	string fullblock;
+	string fullblock; // block = 8 bytes
 public:
-	ansiX923(){};
-	ansiX923(string block) : fullblock("")
+	Padding(){};
+	Padding(string block, char paddType) : fullblock("")
 	{
-			fullblock += block;
-			vector<int> arr(8 - block.length());
-			for (unsigned int i = 0; i < 8 - block.length(); i++)
-				arr[i] = 0;
-			arr[8 - block.length() - 1] = 8 - block.length() - 1;
-			fullblock += translate(arr, 8 - block.length());
-	}
-	string add() 
-	{	return fullblock;	}
-
-	~ansiX923(){};
-};
-// DD DD DD DD 04 04 04 04 (block = 8 bytes) 
-class pkcs7
-{
-	string fullblock;
-public:
-	pkcs7(){};
-	pkcs7(string block) : fullblock("")
-	{
-			fullblock += block;
-			vector<int> arr(8 - block.length());
-			for (unsigned int i = 0; i < 8 - block.length(); i++)
-				arr[i] = 8 - block.length() - 1;
-			fullblock += translate(arr, 8 - block.length());
-	}
-
-	string add()
-	{	return fullblock; 	}
-
-	~pkcs7(){};
-};
-// DD DD DD DD 81 A6 23 04 ((empty-1) - random, last - number of empty) (block = 8 bytes) 
-class iso10126
-{
-	string fullblock;
-public:
-	iso10126(){};
-	iso10126(string block) : fullblock("")
-	{
-			fullblock += block;
-			vector<int> arr(8 - block.length());
-			srand((unsigned int)time(0));
-			for (unsigned int i = 0; i < 8 - block.length(); i++)
-			{
-				arr[i] = rand() % 29;
-			}
-			arr[8 - block.length() - 1] = 8 - block.length() - 1;
-			fullblock += translate(arr, 8 - block.length());
+		fullblock += block;
+		vector<int> arr(8 - block.length());
+		switch (paddType)
+		{
+		case 'a': // DD DD DD DD 00 00 00 04 (block = 8 bytes)
+		{
+					for (unsigned int i = 0; i < 8 - block.length(); i++)
+						arr[i] = 0;
+					arr[8 - block.length() - 1] = 8 - block.length() - 1;
+		}
+		case 'i': // DD DD DD DD 81 A6 23 04 ((empty-1) - random, last - number of empty) 
+		{
+					srand((unsigned int)time(0));
+					for (unsigned int i = 0; i < 8 - block.length(); i++)
+					{
+						arr[i] = rand() % 29;
+					}
+					arr[8 - block.length() - 1] = 8 - block.length() - 1;
+					break;
+		}
+		case 'p': // DD DD DD DD 04 04 04 04 (block = 8 bytes) 
+		{
+					  for (unsigned int i = 0; i < 8 - block.length(); i++)
+						  arr[i] = 8 - block.length() - 1;
+					  break;
+		}
+		}
+		fullblock += translate(arr, 8 - block.length());
 	}
 
 	string add()
-	{	return fullblock;	}
-
-	~iso10126(){};
+	{
+		return fullblock;
+	}
+	~Padding(){};
 };
 
 class ECB
@@ -483,50 +461,28 @@ public:
 			if (str.length() != 8)
 			{
 				str = string(str.begin(), str.end() - 1);
-				switch (paddingType)
-				{
-				case 'i':
-				{
-							iso10126 is(str);
-							str = is.add();
-							break;
-				}
-				case 'a':
-				{
-							ansiX923 ans(str);
-							str = ans.add();
-							break;
-				}
-				case 'p':
-				{
-							pkcs7 pk(str);
-							str = pk.add();
-							break;
-				}
-				}
+				Padding padd(str, paddingType);
+				str = padd.add();
 				wasDivided = true;
 			}
 			switch (algType)
 			{
 			case 'v':
 			{
-						Vigenere* v = new Vigenere(str, key);
-						finalText += v->e();
-						delete v;
+						Vigenere v(str, key);
+						finalText += v.e();
 						break;
 			}
 			case 's':
 			{
-						Skitala* s = new Skitala(str);
-						finalText += s->e();
-						delete s;
+						Skitala s(str);
+						finalText += s.e();
 						break;
 			}
 			case 'h':
 			{
-						Hill* h = new Hill(str, k);
-						finalText += h->e();
-						delete h;
+						Hill h(str, k);
+						finalText += h.e();
 						break;
 			}
 			}
@@ -631,27 +587,8 @@ public:
 			if (str.length() != 8)
 			{
 				str = string(str.begin(), str.end() - 1);
-				switch (paddingType)
-				{
-				case 'i':
-				{
-							iso10126 is(str);
-							str = is.add();
-							break;
-				}
-				case 'a':
-				{
-							ansiX923 ans(str);
-							str = ans.add();
-							break;
-				}
-				case 'p':
-				{
-							pkcs7 pk(str);
-							str = pk.add();
-							break;
-				}
-				}
+				Padding p(str, paddingType);
+				str = p.add();
 				wasDivided = true;
 			}
 			switch (algType)
@@ -801,27 +738,8 @@ public:
 			if (str.length() != 8)
 			{
 				str = string(str.begin(), str.end() - 1);
-				switch (paddingType)
-				{
-				case 'i':
-				{
-							iso10126 is(str);
-							str = is.add();
-							break;
-				}
-				case 'a':
-				{
-							ansiX923 ans(str);
-							str = ans.add();
-							break;
-				}
-				case 'p':
-				{
-							pkcs7 pk(str);
-							str = pk.add();
-							break;
-				}
-				}
+				Padding p(str, paddingType);
+				str = p.add();
 				wasDivided = true;
 			}
 			switch (algType)
@@ -955,27 +873,8 @@ public:
 			if (str.length() != 8)
 			{
 				str = string(str.begin(), str.end() - 1);
-				switch (paddingType)
-				{
-				case 'i':
-				{
-							iso10126 is(str);
-							str = is.add();
-							break;
-				}
-				case 'a':
-				{
-							ansiX923 ans(str);
-							str = ans.add();
-							break;
-				}
-				case 'p':
-				{
-							pkcs7 pk(str);
-							str = pk.add();
-							break;
-				}
-				}
+				Padding p(str, paddingType);
+				str = p.add();
 				wasDivided = true;
 			}
 			switch (algType)
