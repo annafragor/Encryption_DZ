@@ -6,7 +6,9 @@
 #include <time.h>
 #include <vector>
 #include <fstream>
-#include <conio.h>
+//#include <conio.h>
+#include <memory>
+
 using namespace std;
 
 string alphabet = "abcdefghigklmnopqrstuvwxyz|.?";
@@ -72,7 +74,7 @@ int determ(int** Arr, int size)
 				else
 					matr[j] = Arr[j + 1];
 			}
-			det += (double)pow(-1., (i + j))*determ(matr, size - 1)*Arr[i][size - 1];
+			det += (int)pow(-1., (i + j))*determ(matr, size - 1)*Arr[i][size - 1];
 		}
 		delete[] matr;
 	}
@@ -130,152 +132,22 @@ vector<int> delta(vector<int> d, vector<int> vect) //d - vect
 	return result;
 }
 
-class Skitala //минус - первый и последний символ совпадают
+class Cipher
 {
-	char parchmentTable[2][4];
-	string str; // what we want to chipher or decipher
 public:
-	Skitala(){};
-	Skitala(string str_v) : str(str_v)
-	{
-		for (int i = 0; i < 2; i++)
-		for (int j = 0; j < 4; j++)
-			parchmentTable[i][j] = '\0';
-
-		if (str.length() != 8)
-			throw out_of_range("block for cipher skitala is unsuitable");
-	}
-
-	string e()
-	{
-		string result;
-		int k = 0;
-		for (int i = 0; i < 2; i++)
-		{
-			for (int j = 0; j < 4; j++, k++)
-			{
-				parchmentTable[i][j] = str[k];
-			}
-		}
-		for (int i = 0; i < 4; i++)
-		{
-			for (int j = 0; j < 2; j++)
-			{
-				result += parchmentTable[j][i];
-			}
-		}
-		cout << endl << "want  to  cipher:   " << str;
-		cout << endl << "ciphered skitala:   " << result << endl;
-		return result;
-	}
-	string d()
-	{
-		string result;
-		int k = 0;
-
-		string pD = "";//deciphered plain text
-
-		for (int i = 0; i < 4; i++)
-		{
-			for (int j = 0; j < 2; j++, k++)
-			{
-				parchmentTable[j][i] = str[k];
-			}
-		}
-		for (int i = 0; i < 2; i++)
-		{
-			for (int j = 0; j < 4; j++)
-			{
-				result += parchmentTable[i][j];
-			}
-		}
-		cout << "deciphered skitala: " << result << endl;
-		return result;
-	}
-
-	~Skitala(){};
+	Cipher(){};
+	virtual string e(string str) = 0;
+	virtual string d(string str) = 0;
+	~Cipher(){};
 };
 
-class Vigenere
-{
-	char tabulaRecta[29][29];
-	string key;
-	string str; // what we want to chipher or decipher
-public:
-	Vigenere(){};
-	Vigenere(string str_v, string keyword) : str(str_v)
-	{
-		strcpy((char*)tabulaRecta[0], "abcdefghijklmnopqrstuvwxyz|.?");
-		for (int i = 1; i < 29; i++)
-		{
-			for (int j = 0; j < 28; j++)
-				tabulaRecta[i][j] = tabulaRecta[i - 1][j + 1];
-			tabulaRecta[i][28] = tabulaRecta[i - 1][0];
-		}
-
-		if (keyword.length() == 8)
-			key = keyword;
-		else
-		{
-			for (unsigned int i = 0; i < 8 / keyword.length(); i++)
-				key += keyword;
-			for (unsigned int i = 0; i < 8 % keyword.length(); i++)
-			{
-				key += keyword[i];
-			}
-		}
-	}
-
-	string e()
-	{
-		string result;
-
-		for (int i = 0; i < 8; i++)
-		{
-			result += tabulaRecta[fromChar(key[i])][fromChar(str[i])];
-		}
-		cout << "want to cipher:      " << str << endl;
-		cout << "ciphered vigenere:   " << result << endl;
-		return result;
-	}
-	string d()
-	{
-		string result;
-		int k = 0;
-
-		for (int i = 0; i < 8; i++)
-		{
-			k = 0;
-			while (tabulaRecta[fromChar(key[i])][k] != str[i])
-			{
-				k++;
-			}
-			result += fromInt(k);
-		}
-		cout << "want to decipher:    " << str << endl;
-		cout << "deciphered vigenere: " << result << endl;
-
-		return result;
-	}
-
-	void print()
-	{
-		for (int i = 0; i < 29; i++){
-			for (int j = 0; j < 29; j++)
-				cout << tabulaRecta[i][j] << " ";
-			cout << endl;
-		}
-	}
-	~Vigenere(){};
-};
-
-class Hill 
+class Hill : public Cipher
 {
 	int** k; // key matrix 8x8
-	string str; // what we want to chipher or decipher
+//	string str; // what we want to chipher or decipher
 public:
 	Hill(){};
-	Hill(string str_v, int key_) : str(str_v)
+	Hill(int key_)
 	{
 		srand(key_);
 		k = new int*[8];
@@ -286,7 +158,7 @@ public:
 		}
 	}
 
-	string e()
+	string e(string str)
 	{
 		string result;
 		vector<int> p = translate(str); // plain text vector
@@ -303,7 +175,7 @@ public:
 		cout << endl << "ciphered hill:   " << result << endl;
 		return result;
 	}
-	string d()
+	string d(string str)
 	{
 		string result;
 		k = invMatr(k);
@@ -365,7 +237,7 @@ int** invMatr(int** matr/*size = 8*/)
 		for (int j = 0; j < 8; j++)
 		{
 			add = A(matr, i, j);
-			invM[i][j] = determ(add, 7) * invDet * pow(-1., (i + j));
+			invM[i][j] = (int)determ(add, 7) * invDet * (int)pow(-1., (i + j));
 			invM = transp(invM, 8);
 			if (invM[i][j] >= 0)
 				invM[i][j] = invM[i][j] % 29;
@@ -389,16 +261,145 @@ int** invMatr(int** matr/*size = 8*/)
 	return matr;
 }
 
-class Padding
+class Skitala : public Cipher
 {
-	string fullblock; // block = 8 bytes
+	char parchmentTable[2][4];
+//	string str; // what we want to chipher or decipher
+public:
+	Skitala()
+	{
+		for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 4; j++)
+			parchmentTable[i][j] = '\0';
+	}
+
+	string e(string str)
+	{
+		string result;
+		int k = 0;
+		for (int i = 0; i < 2; i++)
+		{
+			for (int j = 0; j < 4; j++, k++)
+			{
+				parchmentTable[i][j] = str[k];
+			}
+		}
+		for (int i = 0; i < 4; i++)
+		{
+			for (int j = 0; j < 2; j++)
+			{
+				result += parchmentTable[j][i];
+			}
+		}
+		cout << endl << "want  to  cipher:   " << str;
+		cout << endl << "ciphered skitala:   " << result << endl;
+		return result;
+	}
+	string d(string str)
+	{
+		string result;
+		int k = 0;
+
+		string pD = "";//deciphered plain text
+
+		for (int i = 0; i < 4; i++)
+		{
+			for (int j = 0; j < 2; j++, k++)
+			{
+				parchmentTable[j][i] = str[k];
+			}
+		}
+		for (int i = 0; i < 2; i++)
+		{
+			for (int j = 0; j < 4; j++)
+			{
+				result += parchmentTable[i][j];
+			}
+		}
+		cout << "deciphered skitala: " << result << endl;
+		return result;
+	}
+
+	~Skitala(){};
+};
+
+class Vigenere : public Cipher
+{
+	char tabulaRecta[29][29];
+	string key;
+//	string str; // what we want to chipher or decipher
+public:
+	Vigenere(){};
+	Vigenere(string keyword)
+	{
+		strcpy((char*)tabulaRecta[0], "abcdefghijklmnopqrstuvwxyz|.?");
+		for (int i = 1; i < 29; i++)
+		{
+			for (int j = 0; j < 28; j++)
+				tabulaRecta[i][j] = tabulaRecta[i - 1][j + 1];
+			tabulaRecta[i][28] = tabulaRecta[i - 1][0];
+		}
+
+		if (keyword.length() == 8)
+			key = keyword;
+		else
+		{
+			for (unsigned int i = 0; i < 8 / keyword.length(); i++)
+				key += keyword;
+			for (unsigned int i = 0; i < 8 % keyword.length(); i++)
+			{
+				key += keyword[i];
+			}
+		}
+	}
+
+	string e(string str)
+	{
+		string result;
+
+		for (int i = 0; i < 8; i++)
+		{
+			result += tabulaRecta[fromChar(key[i])][fromChar(str[i])];
+		}
+		cout << "want to cipher:      " << str << endl;
+		cout << "ciphered vigenere:   " << result << endl;
+		return result;
+	}
+	string d(string str)
+	{
+		string result;
+		int k = 0;
+
+		for (int i = 0; i < 8; i++)
+		{
+			k = 0;
+			while (tabulaRecta[fromChar(key[i])][k] != str[i])
+			{
+				k++;
+			}
+			result += fromInt(k);
+		}
+		cout << "want to decipher:    " << str << endl;
+		cout << "deciphered vigenere: " << result << endl;
+
+		return result;
+	}
+	~Vigenere(){};
+};
+
+class Padding
+{// block = 8 bytes
+	char type;
 public:
 	Padding(){};
-	Padding(string block, char paddType) : fullblock("")
+	Padding(char paddType) : type(paddType)	{}
+	
+	string pad(string block)
 	{
+		string fullblock;
 		fullblock += block;
 		vector<int> arr(8 - block.length());
-		switch (paddType)
+		switch (type)
 		{
 		case 'a': // DD DD DD DD 00 00 00 04 (block = 8 bytes)
 		{
@@ -424,548 +425,122 @@ public:
 		}
 		}
 		fullblock += translate(arr, 8 - block.length());
-	}
-
-	string add()
-	{
 		return fullblock;
+	}
+	string unpad(string block)
+	{
+		if (block.length() == 0)
+			return "";
+		else if (block.length() == 1)
+			return "";
+		else
+		{
+		string cutblock;
+		vector<int> o = translate(block);
+		cutblock = string(block.begin(), block.end() - o[block.length() - 1] - 1);
+		return cutblock;
+		}
 	}
 	~Padding(){};
 };
 
-class ECB
+class Mode
 {
-	string key;
-	int k;
-	string finalText;
-	bool wasDivided;
+protected:
+	unique_ptr<Cipher> c;
 public:
-	ECB() : key(""), finalText(""), k(0), wasDivided(false) {}; //for Skitala
-	ECB(string key_v, int k_v) : key(key_v), finalText(""), wasDivided(false), k(k_v) {}; //for Vigenere
+	Mode(Cipher* c_v) : c(c_v) {};
+	virtual string e(string str) = 0;
+	virtual string d(string str) = 0;
+	~Mode(){}
+};
 
-	string e(char algType, char paddingType)
-	{
-		string str;
-		char ch;
-		fstream Fp("plainText.txt");
-		while (!Fp.eof())
-		{
-			str = "";
-			while (!Fp.eof())
-			{
-				Fp >> ch;
-				str += ch;
-				if (str.length() == 8)
-					break;
-			}
-			if (str.length() != 8)
-			{
-				str = string(str.begin(), str.end() - 1);
-				Padding padd(str, paddingType);
-				str = padd.add();
-				wasDivided = true;
-			}
-			switch (algType)
-			{
-			case 'v':
-			{
-						Vigenere v(str, key);
-						finalText += v.e();
-						break;
-			}
-			case 's':
-			{
-						Skitala s(str);
-						finalText += s.e();
-						break;
-			}
-			case 'h':
-			{
-						Hill h(str, k);
-						finalText += h.e();
-						break;
-			}
-			}
-		}		
-		Fp.close();
-		fstream Fс("cipheredText.txt");
-		Fс << finalText;
-		Fс.close();
-		return str;
-	}
-	string d(char algType)
-	{
-		string str;
-		char ch;
-		finalText = "";
-		fstream Fp("cipheredText.txt");
-		while (!Fp.eof())
-		{
-			str = "";
-			while (!Fp.eof())
-			{
-				Fp >> ch;
-				str += ch;
-				if (str.length() == 8)
-					break;
-			}
-			if (str.length() != 8)
-				break;
-			switch (algType)
-			{
-			case 'v':
-			{
-						Vigenere v(str, key);
-						finalText += v.d();
-						break;
-			}
-			case 's':
-			{
-						Skitala s(str);
-						finalText += s.d();
-						break;
-			}
-			case 'h':
-			{
-						Hill h(str, k);
-						finalText += h.d();
-						break;
-			}
-			}
-		}
-		if (wasDivided)
-		{
-			vector<int> o = translate(finalText);
-			finalText = string(finalText.begin(), finalText.end() - o[finalText.length() - 1] - 1);
-		}
-		Fp.close();
-		fstream Fc("decipheredText.txt");
-		Fc << "fTxt = " << finalText;
-		Fc.close();
-		return str;
-	}
+class ECB : public Mode
+{
+public:
+	ECB(Cipher* cipher) : Mode(cipher) {};
 
+	string e(string str)
+	{	
+		return c->e( str);
+	}
+	string d(string str)
+	{
+		if (str.length() == 0)
+			return "";
+		return c->d(str);
+	}
 	~ECB(){};
 };
 
-class CBC
+class CBC : public Mode
 {
+private:	
 	string vect;
-	string key;
-	int k;
-	string finalText;
-	bool wasDivided;
 public:
-	CBC(){};
-	CBC(string key_v, string vect_v, int k_v) : key(key_v), k(k_v), vect(""), 
-		finalText(""), wasDivided(false)
-	{
-		if (vect_v.length() != 8)
-			throw out_of_range("too long vector for CBC");
-		else
-			vect = vect_v;
-	}
+	CBC(Cipher* cipher, string vect_v) : Mode(cipher), vect(vect_v){}
 
-	string e(char algType, char paddingType)
+	string e(string str)
 	{
-		string str;
-		char ch;
-		finalText = "";
-		fstream Fp("plainText.txt");
-		Fp.seekg(0, ios_base::beg);
-
-		while (!Fp.eof())
-		{
-			str = "";
-			while (!Fp.eof())
-			{
-				Fp >> ch;
-				str += ch;
-				if (str.length() == 8)
-					break;
-			}
-			if (str.length() != 8)
-			{
-				str = string(str.begin(), str.end() - 1);
-				Padding p(str, paddingType);
-				str = p.add();
-				wasDivided = true;
-			}
-			switch (algType)
-			{
-			case 'v':
-			{
-						vector<int> vec = translate(vect);
-						vector<int> p = translate(str);
-						str = translate(summ(p, vec), p.size());
-						Vigenere v(str, key);
-						vect = v.e();
-						finalText += vect;
-						break;
-			}
-			case 's':
-			{
-						vector<int> vec = translate(vect);
-						vector<int> p = translate(str);
-						str = translate(summ(p, vec), p.size());
-						Skitala s(str);
-						vect = s.e();
-						finalText += vect;
-						break;
-			}
-			case 'h':
-			{
-						vector<int> vec = translate(vect);
-						vector<int> p = translate(str);
-						str = translate(summ(p, vec), p.size());
-						Hill h(str, k);
-						vect = h.e();
-						finalText += vect;
-						break;
-			}
-			}
-		}
-		Fp.close();
-		fstream Fс("cipheredText.txt");		
-		Fс << finalText;
-		Fс.close();
-		return str;
+		vector<int> vec = translate(vect);
+		vector<int> p = translate(str);
+		str = translate(summ(p, vec), p.size());
+		vect = c->e(str);
+		return vect;
 	}
-	string d(char algType, string vect_v)
+	string d(string str)
 	{
-		string str;
-		char ch;
-		finalText = "";
-		vect = vect_v;
-		fstream Fp("cipheredText.txt");
-		while (!Fp.eof())
-		{
-			str = "";
-			while (!Fp.eof())
-			{
-				Fp >> ch;
-				str += ch;
-				if (str.length() == 8)
-					break;
-			}
-			if (str.length() != 8)
-				break;
-			switch (algType)
-			{
-			case 'v':
-			{
-						vector<int> vec = translate(vect);
-						vector<int> p = translate(str);
-						Vigenere v(str, key);
-						string dd = v.d();
-						finalText += translate(delta(translate(dd), vec), dd.size());
-						vect = str;
-						break;
-			}
-			case 's':
-			{
-						vector<int> vec = translate(vect);
-						vector<int> p = translate(str);
-						Skitala s(str);
-						string dd = s.d();
-						finalText += translate(delta(translate(dd), vec), dd.size());
-						vect = str;
-						break;
-			}
-			case 'h':
-			{
-						vector<int> vec = translate(vect);
-						vector<int> p = translate(str);
-						Hill h(str, k);
-						string dd = h.d();
-						finalText += translate(delta(translate(dd), vec), dd.size());
-						vect = str;
-						break;
-			}
-			}
-		}
-		cout << endl << "fTxt =  " << finalText << endl;
-		if (wasDivided)
-		{
-			vector<int> o = translate(finalText);
-			finalText = string(finalText.begin(), finalText.end() - (o[finalText.length() - 1]) - 1);
-		}
-		Fp.close();
-		cout << "fTxt =  " << finalText << endl;
-		fstream Fc("decipheredText.txt");
-		Fc << "fTxt = " << finalText;
-		Fc.close();
-		return str;
-	}
+		if (str.length() == 0)
+			return "";
+		vector<int> vec = translate(vect);
+		vector<int> p = translate(str);
+		string dd = c->d(str);
+		vect = str;
+		return translate(delta(translate(dd), vec), dd.size());
+	}	
 	~CBC(){};
 };
 
-class OFB
+class OFB : public Mode
 {
 	string vect;
-	string key;
-	int k;
-	string finalText;
-	bool wasDivided;
 public:
-	OFB(){};
-	OFB(string key_v, string vect_v, int k_v) : key(key_v), k(k_v), vect(""),
-		finalText(""), wasDivided(false){
-		if (vect_v.length() != 8)
-			throw out_of_range("too long vector for OFB");
-		else
-			vect = vect_v;
-	}
+	OFB(Cipher* cipher, string vect_v) : Mode(cipher), vect(vect_v) {}
 	
-	string e(char algType, char paddingType)
+	string e(string str)
 	{
-		string str;
-		char ch;
-		finalText = "";
-		fstream Fp("plainText.txt");
-		Fp.seekg(0, ios_base::beg);
-
-		while (!Fp.eof())
-		{
-			str = "";
-			while (!Fp.eof())
-			{
-				Fp >> ch;
-				str += ch;
-				if (str.length() == 8)
-					break;
-			}
-			if (str.length() != 8)
-			{
-				str = string(str.begin(), str.end() - 1);
-				Padding p(str, paddingType);
-				str = p.add();
-				wasDivided = true;
-			}
-			switch (algType)
-			{
-			case 'v':
-			{
-						Vigenere v(vect, key);
-						vect = v.e();
-						finalText += translate(summ(translate(vect), translate(str)), str.length());
-						break;
-			}
-			case 's':
-			{
-						Skitala s(vect);
-						vect = s.e();
-						finalText += translate(summ(translate(vect), translate(str)), str.length());
-						break;
-			}
-			case 'h':
-			{
-						Hill h(vect, k);
-						vect = h.e();
-						finalText += translate(summ(translate(vect), translate(str)), str.length());
-						break;
-			}
-			}
-		}
-		Fp.close();
-		fstream Fс("cipheredText.txt");
-		Fс << finalText;
-		Fс.close();
-		return str;
+		vect = c->e(vect);
+		return translate(summ(translate(vect), translate(str)), str.length());
 	}
-	string d(char algType, string vect_v)
+	string d(string str)
 	{
-		string str;
-		char ch;
-		finalText = "";
-		vect = vect_v;
-		fstream Fp("cipheredText.txt");
-		while (!Fp.eof())
-		{
-			str = "";
-			while (!Fp.eof())
-			{
-				Fp >> ch;
-				str += ch;
-				if (str.length() == 8)
-					break;
-			}
-			if (str.length() != 8)
-				break;
-			switch (algType)
-			{
-			case 'v':
-			{
-						Vigenere v(vect, key);
-						vect = v.e();
-						finalText += translate(delta(translate(str), translate(vect)), vect.length());
-						break;
-			}
-			case 's':
-			{
-						Skitala s(vect);
-						vect = s.e();
-						finalText += translate(delta(translate(str), translate(vect)), vect.length());
-						break;
-			}
-			case 'h':
-			{
-						Hill h(vect, k);
-						vect = h.e();
-						finalText += translate(delta(translate(str), translate(vect)), vect.length());
-						break;
-			}
-			}
-		}
-		cout << endl << "fTxt =  " << finalText << endl;
-		if (wasDivided)
-		{
-			vector<int> o = translate(finalText);
-			finalText = string(finalText.begin(), finalText.end() - (o[finalText.length() - 1]) - 1);
-		}
-		Fp.close();
-		cout << "fTxt =  " << finalText << endl;
-		fstream Fc("decipheredText.txt");
-		Fc << "fTxt = " << finalText;
-		Fc.close();
-		return str;
-
+		if (str.length() == 0)
+			return "";
+		vect = c->e(vect);
+		return translate(delta(translate(str), translate(vect)), vect.length());
 	}
-
 	~OFB(){};
 };
 
-class CFB
+class CFB : public Mode
 {
 	string vect;
-	string key;
-	int k;
-	string finalText;
-	bool wasDivided;
 public:
-	CFB(){};
-	CFB(string key_v, string vect_v, int k_v) : key(key_v), k(k_v), vect(""),
-		finalText(""), wasDivided(false){
-		if (vect_v.length() != 8)
-			throw out_of_range("too long vector for CFB");
-		else
-			vect = vect_v;
-	}
+	CFB(Cipher* cipher, string vect_v) : Mode(cipher), vect(vect_v) {};
 
-	string e(char algType, char paddingType)
+	string e(string str)
 	{
-		string str;
-		char ch;
-		finalText = "";
-		fstream Fp("plainText.txt");
-		Fp.seekg(0, ios_base::beg);
-
-		while (!Fp.eof())
-		{
-			str = "";
-			while (!Fp.eof())
-			{
-				Fp >> ch;
-				str += ch;
-				if (str.length() == 8)
-					break;
-			}
-			if (str.length() != 8)
-			{
-				str = string(str.begin(), str.end() - 1);
-				Padding p(str, paddingType);
-				str = p.add();
-				wasDivided = true;
-			}
-			switch (algType)
-			{
-			case 'v':
-			{
-						Vigenere v(vect, key);
-						vect = translate(summ(translate(v.e()), translate(str)), vect.length());
-						finalText += vect;
-						break;
-			}
-			case 's':
-			{
-						Skitala s(vect);
-						vect = translate(summ(translate(s.e()), translate(str)), vect.length());
-						finalText += vect;
-						break;
-			}
-			case 'h':
-			{
-						Hill h(vect, k);
-						vect = translate(summ(translate(h.e()), translate(str)), vect.length());
-						finalText += vect;
-						break;
-			}
-			}
-		}
-		Fp.close();
-		fstream Fс("cipheredText.txt");
-		Fс << finalText;
-		Fс.close();
-		return str;
+		vect = translate(summ(translate(c->e(vect)), translate(str)), vect.length());
+		return vect;
 	}
-	string d(char algType, string vect_v)
+	string d(string str)
 	{
-		string str;
-		char ch;
-		finalText = "";
-		vect = vect_v;
-		fstream Fp("cipheredText.txt");
-		while (!Fp.eof())
-		{
-			str = "";
-			while (!Fp.eof())
-			{
-				Fp >> ch;
-				str += ch;
-				if (str.length() == 8)
-					break;
-			}
-			if (str.length() != 8)
-				break;
-			switch (algType)
-			{
-			case 'v':
-			{
-						Vigenere v(vect, key);
-						finalText += translate(delta(translate(str), translate(v.e())), str.length());
-						vect = str;
-						break;
-			}
-			case 's':
-			{
-						Skitala s(vect);
-						finalText += translate(delta(translate(str), translate(s.e())), str.length());
-						vect = str;
-						break;
-			}
-			case 'h':
-			{
-						Hill h(vect, k);
-						finalText += translate(delta(translate(str), translate(h.e())), str.length());
-						vect = str;
-						break;
-			}
-			}
-		}
-		cout << endl << "fTxt =  " << finalText << endl;
-		if (wasDivided)
-		{
-			vector<int> o = translate(finalText);
-			finalText = string(finalText.begin(), finalText.end() - (o[finalText.length() - 1]) - 1);
-		}
-		Fp.close();
-		cout << "fTxt =  " << finalText << endl;
-		fstream Fc("decipheredText.txt");
-		Fc << "fTxt = " << finalText;
-		Fc.close();
-		return str;
+		if (str.length() == 0)
+			return "";
+		string result = translate(delta(translate(str), translate(c->e(vect))), str.length());
+		vect = str;
+		return result;
 	}
-
 	~CFB(){};
 };
 
@@ -973,91 +548,68 @@ int main()
 {
 	try
 	{
-		ofstream f("cipheredText.txt");
-		f.close();
-		ofstream ff("decipheredText.txt");
-		ff.close();
-		string vect;
-		string key; //for vigenere
-		int k; //for hill
-		cout << "Text, you want to encrypt, must be in 'plainText.txt'." << endl;
-		cout << "There must be NO spaces in your text. Replace them with '|'" << endl;
-		cout << "Ciphered and deciphered texts you will find in 'cipheredText.txt' and \n'decipheredText.txt'." << endl;
-		cout << endl << "ECB = 'e'; CBC = 'c'; OFB = 'o'; CFB = 'f'" << endl;
-		cout << "write block cipher mode: ";
-		char mode = _getch(); cout << mode << endl;
-		if ((mode != 'e')||(mode != 'c')||(mode != 'o')||(mode != 'f'))
-			mode = 'e'; // ECB 
-		if (mode != 'e')
-		{
-			cout << "write your vector. NO SPACES \n(!!) vector.length() = 8 (!!)" << endl;
-			cin >> vect;			
-		}
+		Cipher* ciph = new Skitala();
+		Padding* p = new Padding('i');
+		Mode* m = new ECB(ciph);
 
-		cout << endl << "PKCS7 = 'p'; ANSI X.923 = 'a'; ISO 10126 = 'i'" << endl;
-		cout << "write type of padding: ";
-		char paddingType = _getch(); cout << paddingType << endl;
-		if ((paddingType != 'p') || (paddingType != 'a') || (paddingType != 'i'))
-			paddingType = 'p'; // PKCS7 
-		cout << endl << "Skitala = 's'; Vigenere = 'v'; Hill = 'h'" << endl;
-		cout << "write algorithm: ";
-		char alg = _getch(); cout << alg << endl;
-		if ((alg != 's') && (alg != 'v') && (alg != 'h')){
-			cout << "alg = " << alg << endl;
-			cout << "It seems like you don't want to encrypt anything." << endl;
-			_getch();
-			return 0;
-		}
+		string lastFinalText = "";
+		bool ciphr = true;
+		bool wasEnd = false;
+		//ofstream f("cipheredText.txt");
+		//f.close();
+		//ofstream ff("decipheredText.txt");
+		//ff.close();
+		string str;
+		char ch;
+		string finalText = "";
 
-		switch (alg)
+	//	fstream Fp("plainText.txt");
+		fstream Fp("cipheredText.txt");
+		Fp.seekg(0, ios_base::beg);
+//		fstream Fс("cipheredText.txt");
+		fstream Fc("decipheredText.txt");
+
+		while (!Fp.eof())
 		{
-		case 's':
-			k = 0; key = "";
-			break;
-		case 'v':
-			cout << "write your keyword: "; cin >> key;
-			k = 0;
-			break;
-		case 'h':
-			cout << "write you key number for matrix: "; cin >> k;
-			key = "";
-			break;
-		default:
-			break;
-		}
-		switch (mode)
-		{
-		case 'e':
-		{
-					ECB obj(key, k);
-					obj.e(alg, paddingType);
-					obj.d(alg);
+			str = "";
+			ch = '\0';
+			while (!Fp.eof())
+			{
+				Fp >> ch;
+				//if(Fp.fail())
+				//	break;
+				str += ch;
+				if (str.length() == 8)
 					break;
+			}
+			Fp >> ch;
+			if (Fp.eof()){
+				wasEnd = true;
+			}
+			else
+				Fp.seekg(-1, Fp.cur);
+
+			finalText = m->d(str);
+			if (wasEnd){
+				finalText = p->unpad(finalText);
+				Fc << finalText;
+				break;
+			}
+			Fc << finalText;
+			//if (str.length() != 8)
+			//{
+			//	if (str.length() != 0)
+			//		str = string(str.begin(), str.end() - 1);
+			//	str = p->pad(str);
+			//}
+
+//			finalText = m->e(str);
+			//////if(Fp.eof())
+			//////	finalText = p->unpad(str);
 		}
-		case 'c':
-		{
-					CBC obj(key, vect, k);
-					obj.e(alg, paddingType);
-					obj.d(alg, vect);
-					break;
-		}
-		case 'o':
-		{
-					OFB obj(key, vect, k);
-					obj.e(alg, paddingType);
-					obj.d(alg, vect);
-					break;
-		}
-		case 'f':
-		{
-					CFB obj(key, vect, k);
-					obj.e(alg, paddingType);
-					obj.d(alg, vect);
-					break;
-		}
-		default:
-			break;
-		}
+		Fp.close();
+		Fc.close();
+		
 	}
 	catch (exception& e)
 	{
