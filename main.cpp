@@ -6,7 +6,7 @@
 #include <time.h>
 #include <vector>
 #include <fstream>
-//#include <conio.h>
+#include <conio.h> //_getch()
 #include <memory>
 
 using namespace std;
@@ -264,7 +264,6 @@ int** invMatr(int** matr/*size = 8*/)
 class Skitala : public Cipher
 {
 	char parchmentTable[2][4];
-//	string str; // what we want to chipher or decipher
 public:
 	Skitala()
 	{
@@ -327,7 +326,6 @@ class Vigenere : public Cipher
 {
 	char tabulaRecta[29][29];
 	string key;
-//	string str; // what we want to chipher or decipher
 public:
 	Vigenere(){};
 	Vigenere(string keyword)
@@ -548,68 +546,140 @@ int main()
 {
 	try
 	{
-		Cipher* ciph = new Skitala();
-		Padding* p = new Padding('i');
-		Mode* m = new ECB(ciph);
+		int k = 0; string key;
+		string vect;
+		cout << "Text, you want to encrypt, must be in 'plainText.txt'." << endl;
+		cout << "There must be NO spaces in your text. Replace them with '|'" << endl;
+		cout << "Ciphered and deciphered texts you will find in 'cipheredText.txt' and \n'decipheredText.txt'." << endl;
+		cout << endl << "ECB = 'e'; CBC = 'c'; OFB = 'o'; CFB = 'f'" << endl;
+		cout << "write block cipher mode: ";
+		char mode = _getch(); cout << mode << endl;
+		if ((mode != 'e') || (mode != 'c') || (mode != 'o') || (mode != 'f'))
+			mode = 'e'; // ECB 
+		if (mode != 'e')
+		{
+			cout << "write your vector. NO SPACES \n(!!) vector.length() = 8 (!!)" << endl;
+			cin >> vect;
+		}
+		cout << endl << "PKCS7 = 'p'; ANSI X.923 = 'a'; ISO 10126 = 'i'" << endl;
+		cout << "write type of padding: ";
+		char paddingType = _getch(); cout << paddingType << endl;
+		if ((paddingType != 'p') || (paddingType != 'a') || (paddingType != 'i'))
+			paddingType = 'p'; // PKCS7 
+		Padding* p = new Padding(paddingType);
 
-		string lastFinalText = "";
-		bool ciphr = true;
-		bool wasEnd = false;
-		//ofstream f("cipheredText.txt");
-		//f.close();
-		//ofstream ff("decipheredText.txt");
-		//ff.close();
+		cout << endl << "Skitala = 's'; Vigenere = 'v'; Hill = 'h'" << endl;
+		cout << "write algorithm: ";
+		char alg = _getch(); cout << alg << endl;
+		if ((alg != 's') && (alg != 'v') && (alg != 'h')){
+			cout << "alg = " << alg << endl;
+			cout << "It seems like you don't want to encrypt anything." << endl;
+			_getch();
+			return 0;
+		}
+
+		bool encr = true;
+		cout << "Choose encryption ('e') ar decryption ('d')" << endl;
+		char e = _getch(); cout << e << endl;
+		if (e == 'd')
+			encr = false;
+
+		Cipher* ciph;
+		Mode* m;
+		switch (alg)
+		{
+		case 's':
+		{
+					ciph = new Skitala();
+					break;
+		}
+		case 'v':
+		{
+					cout << "write your keyword: "; cin >> key;
+					ciph = new Vigenere(key);
+					break;
+		}
+		case 'h':
+		{
+					cout << "write you key number for matrix: "; cin >> k;
+					ciph = new Hill(k);
+					break;
+		}
+		default:
+			break;
+		}
+		if (mode == 'e')
+			m = new ECB(ciph);
+		else if (mode == 'o')
+			m = new OFB(ciph, vect);
+		else if (mode == 'f')
+			m = new CFB(ciph, vect);
+		else if (mode == 'c')
+			m = new CBC(ciph, vect);
+		fstream* Fp;
+		fstream* Fc;
+		if (encr) //clean files where we will write
+		{
+			ofstream f("cipheredText.txt");
+			f.close();
+			Fp = new fstream("plainText.txt");
+			Fc = new fstream("cipheredText.txt");
+		}
+		else
+		{
+			ofstream f("decipheredText.txt");
+			f.close();
+			Fp = new fstream("cipheredText.txt");
+			Fc = new fstream("decipheredText.txt");
+		}
+		Fp->seekg(0, ios_base::beg);
 		string str;
 		char ch;
+		bool wasEnd = false;
 		string finalText = "";
-
-	//	fstream Fp("plainText.txt");
-		fstream Fp("cipheredText.txt");
-		Fp.seekg(0, ios_base::beg);
-//		fstream Fс("cipheredText.txt");
-		fstream Fc("decipheredText.txt");
-
-		while (!Fp.eof())
+		while (!Fp->eof())
 		{
 			str = "";
 			ch = '\0';
-			while (!Fp.eof())
+			while (!Fp->eof())
 			{
-				Fp >> ch;
-				//if(Fp.fail())
-				//	break;
+				*Fp >> ch;
 				str += ch;
 				if (str.length() == 8)
 					break;
 			}
-			Fp >> ch;
-			if (Fp.eof()){
-				wasEnd = true;
+
+			if (encr)
+			{
+				if (str.length() != 8)
+				{
+					if (str.length() != 0)
+						str = string(str.begin(), str.end() - 1);
+					str = p->pad(str);
+				}
+				finalText = m->e(str);
+				*Fc << finalText;
 			}
 			else
-				Fp.seekg(-1, Fp.cur);
-
-			finalText = m->d(str);
-			if (wasEnd){
-				finalText = p->unpad(finalText);
-				Fc << finalText;
-				break;
+			{
+				*Fp >> ch;
+				if (Fp->eof()){
+					wasEnd = true;
+				}
+				else
+					Fp->seekg(-1, Fp->cur);
+				if (wasEnd){
+					finalText = m->d(str);
+					finalText = p->unpad(finalText);
+					*Fc << finalText;
+					break;
+				}
+				finalText = m->d(str);
+				*Fc << finalText;
 			}
-			Fc << finalText;
-			//if (str.length() != 8)
-			//{
-			//	if (str.length() != 0)
-			//		str = string(str.begin(), str.end() - 1);
-			//	str = p->pad(str);
-			//}
-
-//			finalText = m->e(str);
-			//////if(Fp.eof())
-			//////	finalText = p->unpad(str);
 		}
-		Fp.close();
-		Fc.close();
-		
+		delete p;
+		delete m;
 	}
 	catch (exception& e)
 	{
